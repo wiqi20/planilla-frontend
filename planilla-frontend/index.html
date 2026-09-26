@@ -1,0 +1,2105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planilla — Control de Nómina</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;700&family=Cormorant+Garamond:wght@400&family=Work+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     Tokens tomados de la skill "posada" (sistema GRAZA).
+     Sin modo oscuro: la skill no define una paleta oscura, así que
+     no se inventa una — la app queda solo en el tema claro de la skill.
+     --ink-soft es DERIVADO (no está en la skill): Olive Ink mezclado
+     con blanco al 60%, para texto secundario legible sobre Linen Cream.
+     Las líneas internas de las tablas usan Olive Ink al 25% de opacidad
+     (derivado) para no saturar filas densas; el resto de los hairlines
+     de la app (paneles, tabs, inputs, fila de totales) siguen en
+     Olive Ink pleno, tal como pide la skill.
+  ============================================================ */
+  :root {
+    --paper: #FFF4EC;          /* Linen Cream — superficie base */
+    --paper-raised: #F6E6D9;   /* Buttery Peach — tarjetas y superficies secundarias */
+    --ink: #3C422E;            /* Olive Ink — texto y bordes primarios */
+    --ink-soft: color-mix(in srgb, #3C422E 60%, white); /* derivado: texto secundario */
+    --line: #3C422E;           /* hairlines en Olive Ink, tal como pide la skill */
+    --cta: #D1E030;            /* EVOO Yellow-Green — único CTA saturado por sección */
+    --font-serif: 'Cormorant Garamond', Georgia, serif;  /* sustituto de ITC Garamond Condensed */
+    --font-sans: 'Lora', Georgia, serif;                  /* sustituto de GT Alpina Typewriter */
+    --font-micro: 'Work Sans', ui-sans-serif, sans-serif; /* sustituto de Apercu (micro-etiquetas) */
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+  header.top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--ink);
+    flex-wrap: wrap;
+  }
+  header.top h1 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 46px;
+    line-height: 1;
+    letter-spacing: -0.97px;
+    margin: 0;
+  }
+  header.top .sub {
+    color: var(--ink-soft);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+  .badge {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    padding: 10px 20px;
+    border-radius: 9999px;
+    white-space: nowrap;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 820px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--paper-raised);
+    border: 1px solid var(--ink);
+    border-radius: 10px;
+    padding: 30px;
+  }
+  .panel h2 {
+    font-family: var(--font-serif);
+    font-size: 46px;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.97px;
+    margin: 0 0 8px;
+  }
+  .panel .hint {
+    font-size: 16px;
+    color: var(--ink-soft);
+    margin: 0 0 14px;
+  }
+
+  .emp-list { list-style: none; margin: 0; padding: 0; }
+  .emp-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--ink);
+    cursor: pointer;
+    border-radius: 0;
+  }
+  .emp-item:hover { background: color-mix(in srgb, var(--paper-raised) 60%, transparent); }
+  .emp-item.active { background: var(--paper-raised); }
+  .emp-item .name { font-weight: 700; font-size: 16px; }
+  .emp-item .meta { font-size: 13px; color: var(--ink-soft); }
+  .emp-item .del {
+    background: none; border: none; color: var(--ink); cursor: pointer;
+    font-size: 16px; padding: 2px 6px; line-height: 1;
+  }
+  .empty-note {
+    font-size: 16px; color: var(--ink-soft); padding: 14px 4px;
+    border: 1px dashed var(--ink); border-radius: 10px; text-align: center;
+  }
+  .history-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 10px 8px; border-bottom: 1px solid var(--ink); cursor: pointer; border-radius: 0;
+  }
+  .history-item:hover { background: color-mix(in srgb, var(--paper-raised) 60%, transparent); }
+  .history-item .h-main { font-size: 16px; font-weight: 700; }
+  .history-item .h-meta { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+  .history-item .h-tag {
+    font-family: var(--font-micro); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 2px 10px; border-radius: 9999px; border: 1px solid var(--ink); color: var(--ink); white-space: nowrap;
+  }
+  .history-period-header {
+    font-family: var(--font-serif); font-size: 20px; font-weight: 400; color: var(--ink);
+    padding: 14px 8px 6px; border-bottom: none;
+  }
+  .history-period-header:first-child { padding-top: 4px; }
+
+  form.stack { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--ink-soft); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  input[type=text], input[type=number], input[type=date], input[type=email], input[type=password], input[type=url] {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    padding: 8px 10px;
+    border: 1px solid var(--ink);
+    border-radius: 10px;
+    background: var(--paper);
+    color: var(--ink);
+    width: 100%;
+  }
+  input:focus, button:focus-visible, select:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 1px;
+  }
+  button {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    padding: 20px 30px;
+    border-radius: 10px;
+    border: 1px solid var(--ink);
+    background: var(--cta);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  button.secondary {
+    background: transparent;
+    color: var(--ink);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+  button:hover { filter: brightness(0.96); }
+  button.secondary:hover { background: var(--paper-raised); filter: none; }
+
+  .main-grid { display: flex; flex-direction: column; gap: 20px; }
+
+  .run-header {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  select {
+    font-family: var(--font-sans); font-size: 16px; padding: 8px 10px;
+    border: 1px solid var(--ink); border-radius: 10px; background: var(--paper); color: var(--ink);
+  }
+
+  table.calc { width: 100%; border-collapse: collapse; font-size: 16px; margin-top: 12px; }
+  table.calc th, table.calc td { text-align: left; padding: 8px 6px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); }
+  table.calc th { font-family: var(--font-micro); color: var(--ink-soft); font-weight: 400; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
+  table.calc td.num, table.calc th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.total-row td { font-weight: 700; border-top: 1px solid var(--ink); border-bottom: none; padding-top: 12px; }
+  tr.deduction td.num::before { content: "− "; }
+  tr.addition td.num::before { content: "+ "; }
+
+  .colilla {
+    background: var(--paper-raised);
+    border: 1px solid var(--ink);
+    border-radius: 10px;
+    padding: 30px;
+  }
+  .colilla-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    border-bottom: 1px solid var(--ink); padding-bottom: 14px; margin-bottom: 14px;
+    flex-wrap: wrap; gap: 10px;
+  }
+  .colilla-head h3 { font-family: var(--font-serif); font-weight: 400; font-size: 30px; margin: 0; }
+  .colilla-head .meta { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+  .neto-box {
+    text-align: right;
+  }
+  .neto-box .label { font-family: var(--font-micro); font-size: 13px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .neto-box .amount { font-family: var(--font-serif); font-size: 46px; font-weight: 400; line-height: 1; color: var(--ink); }
+
+  .actions-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+  .note {
+    font-size: 13px; color: var(--ink); border: 1px solid var(--ink);
+    padding: 12px 16px; background: var(--paper-raised); border-radius: 10px; margin-top: 14px;
+  }
+
+  @media print {
+    body * { visibility: hidden; }
+    .colilla, .colilla * { visibility: visible; }
+    .colilla { position: absolute; top: 0; left: 0; width: 100%; border: none; padding: 0; }
+    .actions-row { display: none; }
+  }
+
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 22px; border-bottom: 1px solid var(--ink);
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  .tab-btn {
+    background: none; border: none; border-bottom: 2px solid transparent;
+    color: var(--ink-soft); font-family: var(--font-sans); font-weight: 500; font-size: 16px;
+    padding: 10px 6px; margin-right: 18px; cursor: pointer; white-space: nowrap; border-radius: 0;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 700; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .emp-columns { display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 720px) {
+    .emp-columns { grid-template-columns: 1fr; }
+  }
+  select#colillaEmpSelect { max-width: 360px; }
+
+  .login-gate {
+    position: fixed; inset: 0; z-index: 1000;
+    background: color-mix(in srgb, var(--ink) 55%, transparent);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .login-card {
+    width: 100%; max-width: 380px;
+  }
+</style>
+</head>
+<body>
+<div class="login-gate" id="loginGate">
+  <div class="panel login-card">
+    <h2 style="margin-bottom:2px;">Control de Planilla</h2>
+    <p class="hint" id="gateSubtitle">Ingresa con tu usuario administrativo.</p>
+
+    <div class="field">
+      <label for="apiBaseUrl">URL del backend</label>
+      <input type="url" id="apiBaseUrl" required placeholder="https://tu-backend.up.railway.app">
+    </div>
+
+    <form class="stack" id="loginForm">
+      <div class="field">
+        <label for="loginSubdominio">Subdominio de tu empresa</label>
+        <input type="text" id="loginSubdominio" required autocomplete="organization" placeholder="ej. comercialrojas">
+      </div>
+      <div class="field">
+        <label for="loginUsuario">Usuario</label>
+        <input type="text" id="loginUsuario" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="loginPassword">Contraseña</label>
+        <input type="password" id="loginPassword" required autocomplete="current-password">
+      </div>
+      <div class="note" id="loginError" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink);"></div>
+      <button type="submit">Ingresar</button>
+      <button type="button" class="secondary" id="mostrarSetupBtn">¿Empresa nueva? Regístrala aquí</button>
+    </form>
+
+    <form class="stack" id="setupForm" style="display:none;">
+      <p class="hint">Registra tu empresa y su primer usuario administrador.</p>
+      <div class="field">
+        <label for="setupNombreEmpresa">Nombre de la empresa</label>
+        <input type="text" id="setupNombreEmpresa" required placeholder="Ej. Comercial Rojas S.A.">
+      </div>
+      <div class="field">
+        <label for="setupSubdominio">Subdominio (sin espacios, minúsculas)</label>
+        <input type="text" id="setupSubdominio" required pattern="[a-z0-9-]+" placeholder="ej. comercialrojas">
+      </div>
+      <div class="field">
+        <label for="setupUsuario">Usuario</label>
+        <input type="text" id="setupUsuario" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="setupPassword">Contraseña</label>
+        <input type="password" id="setupPassword" required minlength="4" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label for="setupPasswordConfirm">Confirmar contraseña</label>
+        <input type="password" id="setupPasswordConfirm" required minlength="4" autocomplete="new-password">
+      </div>
+      <div class="note" id="setupError" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink);"></div>
+      <button type="submit">Registrar empresa y entrar</button>
+      <button type="button" class="secondary" id="mostrarLoginBtn">Ya tengo una cuenta — ingresar</button>
+    </form>
+  </div>
+</div>
+
+<div class="wrap" id="appWrap" style="display:none;">
+  <header class="top">
+    <div>
+      <h1>Control de Planilla</h1>
+      <div class="sub">Cálculo de nómina quincenal — deducciones de ley Costa Rica</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span class="badge" id="empresaBadge">tuempresa.sticr.com</span>
+      <button type="button" class="secondary" id="logoutBtn" style="padding:6px 10px; font-size:12.5px;">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabsNav">
+    <button class="tab-btn active" data-tab="empleados">Colaboradores</button>
+    <button class="tab-btn" data-tab="colilla">Colilla de pago</button>
+    <button class="tab-btn" data-tab="reporte">Reporte general</button>
+    <button class="tab-btn" data-tab="historial">Historial</button>
+    <button class="tab-btn" data-tab="admin">Admin</button>
+  </nav>
+
+  <div class="tab-panel active" id="tab-empleados">
+    <div class="emp-columns">
+      <div class="panel">
+        <h2>Colaboradores</h2>
+        <p class="hint">Entre 6 y 20 empleados, pago quincenal.</p>
+        <ul class="emp-list" id="empList"></ul>
+        <div id="emptyNote" class="empty-note" style="display:none;">Aún no hay empleados. Agrega el primero abajo.</div>
+      </div>
+
+      <div class="panel">
+        <h2 id="empFormTitle">Agregar empleado</h2>
+        <p class="hint">Haz clic en un colaborador de la lista para editarlo, o en el lápiz.</p>
+        <form class="stack" id="empForm">
+          <div class="field">
+            <label for="empName">Nombre completo</label>
+            <input type="text" id="empName" required placeholder="Ej. María Rojas Vega">
+          </div>
+          <div class="field">
+            <label for="empEmail">Correo electrónico</label>
+            <input type="email" id="empEmail" required placeholder="maria@empresa.com">
+            <div class="note" id="empEmailError" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink); margin-top:2px;"></div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="empSalary">Salario mensual (₡)</label>
+              <input type="number" id="empSalary" required min="0" step="1000" placeholder="450000">
+            </div>
+            <div class="field">
+              <label for="empDate">Fecha de ingreso</label>
+              <input type="date" id="empDate" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="empVacaciones">Días de vacaciones disponibles (base)</label>
+            <input type="number" id="empVacaciones" min="0" step="0.5" value="0">
+            <div class="note" id="empVacacionesLockNote" style="display:none; margin-top:2px;">Aún no cumple 1 año de antigüedad: por ley no se le pueden asignar días de vacaciones todavía.</div>
+          </div>
+          <div class="actions-row" style="margin-top:0;">
+            <button type="submit" id="empFormSubmitBtn">Agregar empleado</button>
+            <button type="button" class="secondary" id="empFormCancelBtn" style="display:none;">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-colilla">
+    <div class="main-grid">
+      <div class="panel">
+        <div class="run-header">
+          <div>
+            <h2 id="runTitle">Generar colilla de pago</h2>
+            <p class="hint" id="runHint">Selecciona un empleado para calcular su pago quincenal.</p>
+            <div class="note" id="antiguedadAlert" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink);"></div>
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:6px;">
+          <label for="colillaEmpSelect">Colaborador</label>
+          <select id="colillaEmpSelect">
+            <option value="">— Selecciona un colaborador —</option>
+          </select>
+        </div>
+
+        <form class="stack" id="payForm" style="display:none;">
+          <div class="field-row">
+            <div class="field">
+              <label for="periodStart">Inicio del período</label>
+              <input type="date" id="periodStart" required>
+            </div>
+            <div class="field">
+              <label for="periodEnd">Fin del período</label>
+              <input type="date" id="periodEnd" required>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="horasExtra">Horas extra trabajadas</label>
+              <input type="number" id="horasExtra" min="0" step="0.5" value="0">
+            </div>
+            <div class="field">
+              <label for="horasSinGoce">Horas sin goce de salario</label>
+              <input type="number" id="horasSinGoce" min="0" step="0.5" value="0">
+            </div>
+          </div>
+          <div class="field">
+            <label for="diasVacaciones">Días de vacaciones disfrutados en el período</label>
+            <input type="number" id="diasVacaciones" min="0" step="1" value="0">
+          </div>
+          <div class="field">
+            <label for="diasSinGoceCompletos">Días completos sin goce de salario</label>
+            <input type="number" id="diasSinGoceCompletos" min="0" step="1" value="0">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="diasIncapacidad">Días de incapacidad</label>
+              <input type="number" id="diasIncapacidad" min="0" step="1" value="0">
+            </div>
+            <div class="field">
+              <label for="diasLicenciaMP">Días licencia maternidad/paternidad</label>
+              <input type="number" id="diasLicenciaMP" min="0" step="1" value="0">
+            </div>
+          </div>
+          <div class="field">
+            <label for="diasLicenciaCuido">Días de licencia de cuido</label>
+            <input type="number" id="diasLicenciaCuido" min="0" step="1" value="0">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="horasFeriado">Horas trabajadas en feriado de pago obligatorio</label>
+              <input type="number" id="horasFeriado" min="0" step="0.5" value="0" disabled>
+            </div>
+            <div class="field">
+              <label for="feriadoNombre">Feriado correspondiente</label>
+              <select id="feriadoNombre" disabled>
+                <option value="">— Selecciona el feriado —</option>
+              </select>
+            </div>
+          </div>
+          <div class="note" id="feriadoInfoNote" style="margin-top:-6px;">Define el período de la colilla para ver si cae algún feriado de pago obligatorio.</div>
+          <button type="submit">Calcular colilla</button>
+        </form>
+
+        <table class="calc" id="calcTable" style="display:none;">
+          <thead>
+            <tr><th>Concepto</th><th class="num">Monto (₡)</th></tr>
+          </thead>
+          <tbody id="calcBody"></tbody>
+        </table>
+      </div>
+
+      <div class="colilla" id="colillaBox" style="display:none;">
+        <div class="colilla-head">
+          <div>
+            <h3>Colilla de pago</h3>
+            <div class="meta" id="colillaMeta"></div>
+          </div>
+          <div class="neto-box">
+            <div class="label">Neto a pagar</div>
+            <div class="amount" id="netoAmount">₡0</div>
+          </div>
+        </div>
+        <table class="calc" id="colillaTable">
+          <tbody id="colillaBody"></tbody>
+        </table>
+        <div class="note" id="vacNote" style="display:none;"></div>
+        <div class="note" id="cajaNote" style="display:none;"></div>
+        <div class="note" id="pendingSaveNote">Revisa los datos. Esta colilla no queda registrada ni se incluirá en el reporte general hasta que presiones "Guardar colilla".</div>
+        <div class="actions-row">
+          <button type="button" id="guardarColillaBtn">Guardar colilla</button>
+          <button type="button" class="secondary" id="downloadPdfBtn">Descargar PDF</button>
+          <button type="button" class="secondary" id="sendEmailBtn">Enviar por correo</button>
+          <button class="secondary" onclick="window.print()">Imprimir</button>
+          <button class="secondary" type="button" id="closeColilla">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-reporte">
+    <div class="panel">
+      <div class="run-header">
+        <div>
+          <h2>Reporte completo de planilla</h2>
+          <p class="hint">Este reporte se arma a partir de las colillas de pago ya generadas para el período que elijas. Primero genera la colilla de cada colaborador en la pestaña "Colilla de pago".</p>
+        </div>
+      </div>
+      <div class="field-row" style="margin-bottom:6px;">
+        <div class="field">
+          <label for="reportStart">Inicio del período</label>
+          <input type="date" id="reportStart">
+        </div>
+        <div class="field">
+          <label for="reportEnd">Fin del período</label>
+          <input type="date" id="reportEnd">
+        </div>
+      </div>
+      <div id="reportEmptyNote" class="empty-note" style="display:none;">Agrega al menos un empleado para generar el reporte.</div>
+      <div class="actions-row" style="margin-top:0;">
+        <button type="button" id="generarReporteBtn">Generar reporte del período</button>
+        <button type="button" class="secondary" id="exportarExcelBtn" style="display:none;">Exportar a Excel</button>
+        <button type="button" class="secondary" id="enviarTodasBtn" style="display:none;">Enviar todas por correo</button>
+      </div>
+      <div class="note" id="reportMissingNote" style="display:none;"></div>
+
+      <div style="overflow-x:auto;">
+        <table class="calc" id="reportResultTable" style="display:none;">
+          <thead>
+            <tr>
+              <th>Colaborador</th>
+              <th class="num">Bruto</th>
+              <th class="num">CCSS</th>
+              <th class="num">Renta</th>
+              <th class="num">Neto</th>
+            </tr>
+          </thead>
+          <tbody id="reportResultBody"></tbody>
+          <tfoot id="reportResultFoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-historial">
+    <div class="panel">
+      <div class="run-header">
+        <div>
+          <h2>Historial de planillas</h2>
+          <p class="hint">Colillas y reportes generados anteriormente. Filtra por período para encontrar uno rápido.</p>
+        </div>
+      </div>
+      <div class="field-row" style="margin-bottom:6px;">
+        <div class="field">
+          <label for="historyStart">Desde</label>
+          <input type="date" id="historyStart">
+        </div>
+        <div class="field">
+          <label for="historyEnd">Hasta</label>
+          <input type="date" id="historyEnd">
+        </div>
+      </div>
+      <div class="actions-row" style="margin-top:0;">
+        <button type="button" class="secondary" id="historyFilterBtn">Filtrar</button>
+        <button type="button" class="secondary" id="historyClearBtn">Ver todo</button>
+      </div>
+      <ul class="emp-list" id="historyList" style="margin-top:10px;"></ul>
+      <div id="historyEmptyNote" class="empty-note" style="display:none; margin-top:10px;">Aún no hay colillas ni reportes guardados.</div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-admin">
+    <div class="panel">
+      <h2>Configuración administrativa</h2>
+      <p class="hint">Estos datos se usan para el encabezado de las colillas y para el envío de correos. Se guardan solo en este navegador.</p>
+      <form class="stack" id="adminForm" style="max-width:420px;">
+        <div class="field">
+          <label for="adminNombreEmpresa">Nombre de la empresa</label>
+          <input type="text" id="adminNombreEmpresa" placeholder="Ej. Comercial Rojas S.A.">
+        </div>
+        <div class="field">
+          <label for="adminCorreo">Correo administrativo (remitente)</label>
+          <input type="email" id="adminCorreo" placeholder="planillas@tuempresa.com">
+          <div class="note" id="adminCorreoError" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink); margin-top:2px;"></div>
+        </div>
+        <button type="submit">Guardar configuración</button>
+        <div class="note" id="adminSavedNote" style="display:none;">Configuración guardada.</div>
+      </form>
+      <div class="note" style="margin-top:18px;">
+        El envío de correo abre tu programa de correo predeterminado (Gmail, Outlook, etc.) con el destinatario, asunto y mensaje ya listos, y descarga la colilla en PDF para que la adjuntes antes de enviar. El correo administrativo que definas aquí se usa como referencia en el mensaje; la cuenta que realmente envía el correo es la que tengas configurada como predeterminada en tu computadora o celular.
+      </div>
+    </div>
+
+    <div class="emp-columns" style="margin-top:24px;">
+      <div class="panel">
+        <h2>Usuarios administradores</h2>
+        <p class="hint">Cualquiera de estos usuarios puede ingresar a esta planilla.</p>
+        <ul class="emp-list" id="usuariosList"></ul>
+      </div>
+
+      <div class="panel">
+        <h2 id="usuarioFormTitle">Crear usuario</h2>
+        <p class="hint">Deja la contraseña en blanco al editar si no quieres cambiarla.</p>
+        <form class="stack" id="usuarioForm">
+          <div class="field">
+            <label for="usuarioNombre">Usuario</label>
+            <input type="text" id="usuarioNombre" required autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="usuarioPassword">Contraseña</label>
+            <input type="password" id="usuarioPassword" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label for="usuarioPasswordConfirm">Confirmar contraseña</label>
+            <input type="password" id="usuarioPasswordConfirm" autocomplete="new-password">
+          </div>
+          <div class="note" id="usuarioFormError" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink);"></div>
+          <div class="actions-row" style="margin-top:0;">
+            <button type="submit" id="usuarioFormSubmitBtn">Crear usuario</button>
+            <button type="button" class="secondary" id="usuarioFormCancelBtn" style="display:none;">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  // ============ Estado y configuración ============
+  const BASE_DOMAINS = ['sticr.app', 'sticr.com']; // dominios propios: un host bajo estos se trata como subdominio de un cliente
+
+  let employees = [];
+  let selectedId = null;
+  let lastReportRows = null;
+  let historyEntries = []; // reconstruido desde la API (colillas + reportes ya guardados en el backend)
+  let editingEmpId = null;
+  let colillaFilenameBase = 'colilla';
+  let colillaContext = null;
+  let pendingColillaData = null;
+  let adminConfig = { nombreEmpresa: '', correoAdmin: '', subdominio: '' };
+  let usuarios = [];
+  let editingUsuarioId = null;
+  let session = { token: null, empresa: null, usuario: null };
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // ============ Backend: URL, subdominio y sesión ============
+
+  function detectarSubdominio() {
+    const host = window.location.hostname;
+    for (const base of BASE_DOMAINS) {
+      if (host === base || host === 'www.' + base) return null; // dominio raíz, sin cliente específico
+      const suffix = '.' + base;
+      if (host.endsWith(suffix)) {
+        const sub = host.slice(0, -suffix.length);
+        if (sub && sub !== 'www') return sub;
+      }
+    }
+    return null;
+  }
+
+  function aplicarSubdominioDetectado() {
+    const sub = detectarSubdominio();
+    if (!sub) return;
+    ['loginSubdominio', 'setupSubdominio'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.value = sub;
+      el.readOnly = true;
+      el.title = 'Detectado automáticamente desde ' + window.location.hostname;
+      el.style.background = 'color-mix(in srgb, var(--ink) 6%, var(--paper))';
+    });
+  }
+
+  function cargarApiBase() {
+    const guardada = localStorage.getItem('planilla_api_base');
+    if (guardada) document.getElementById('apiBaseUrl').value = guardada;
+  }
+
+  function getApiBase() {
+    return (document.getElementById('apiBaseUrl').value || '').trim().replace(/\/+$/, '');
+  }
+
+  document.getElementById('apiBaseUrl').addEventListener('change', () => {
+    try { localStorage.setItem('planilla_api_base', getApiBase()); } catch (e) { /* ignora */ }
+  });
+
+  async function apiFetch(path, options = {}) {
+    const base = getApiBase();
+    if (!base) throw new Error('Define primero la URL del backend.');
+    const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+    if (session.token) headers['Authorization'] = 'Bearer ' + session.token;
+    let res;
+    try {
+      res = await fetch(base + path, {
+        method: options.method || 'GET',
+        headers,
+        body: options.body !== undefined ? JSON.stringify(options.body) : undefined
+      });
+    } catch (e) {
+      throw new Error('No se pudo contactar al backend. Revisa la URL y tu conexión.');
+    }
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* respuestas 204 no traen cuerpo */ }
+    if (!res.ok) {
+      if (res.status === 401) cerrarSesion(true);
+      const err = new Error((data && data.error) || ('Error ' + res.status));
+      err.data = data;
+      throw err;
+    }
+    return data;
+  }
+
+  function guardarSesion(data) {
+    session = { token: data.token, empresa: data.empresa, usuario: data.usuario };
+    try { localStorage.setItem('planilla_session', JSON.stringify(session)); } catch (e) { /* ignora */ }
+  }
+
+  function cargarSesionGuardada() {
+    try {
+      const raw = localStorage.getItem('planilla_session');
+      session = raw ? JSON.parse(raw) : { token: null, empresa: null, usuario: null };
+    } catch (e) {
+      session = { token: null, empresa: null, usuario: null };
+    }
+  }
+
+  function cerrarSesion(porExpirada) {
+    session = { token: null, empresa: null, usuario: null };
+    try { localStorage.removeItem('planilla_session'); } catch (e) { /* ignora */ }
+    mostrarGate();
+    if (porExpirada) {
+      const errorBox = document.getElementById('loginError');
+      errorBox.textContent = 'Tu sesión expiró. Ingresa de nuevo.';
+      errorBox.style.display = 'block';
+    }
+  }
+
+  function mostrarLoginView() {
+    document.getElementById('setupForm').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'flex';
+    document.getElementById('gateSubtitle').textContent = 'Ingresa con tu usuario administrativo.';
+  }
+
+  function mostrarSetupView() {
+    document.getElementById('setupForm').style.display = 'flex';
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('gateSubtitle').textContent = 'Registra tu empresa y su primer usuario administrador.';
+  }
+
+  document.getElementById('mostrarSetupBtn').addEventListener('click', mostrarSetupView);
+  document.getElementById('mostrarLoginBtn').addEventListener('click', mostrarLoginView);
+
+  function mostrarGate() {
+    mostrarLoginView();
+    aplicarSubdominioDetectado();
+    cargarApiBase();
+    document.getElementById('loginGate').style.display = 'flex';
+    document.getElementById('appWrap').style.display = 'none';
+  }
+
+  function ocultarGate() {
+    document.getElementById('loginGate').style.display = 'none';
+    document.getElementById('appWrap').style.display = 'block';
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const subdominio = document.getElementById('loginSubdominio').value.trim().toLowerCase();
+    const usuario = document.getElementById('loginUsuario').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errorBox = document.getElementById('loginError');
+    errorBox.style.display = 'none';
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    try {
+      const data = await apiFetch('/api/auth/login', { method: 'POST', body: { subdominio, usuario, password } });
+      guardarSesion(data);
+      document.getElementById('loginForm').reset();
+      await iniciarSesionApp();
+    } catch (err) {
+      errorBox.textContent = err.message || 'Usuario o contraseña incorrectos.';
+      errorBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('setupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nombreEmpresa = document.getElementById('setupNombreEmpresa').value.trim();
+    const subdominio = document.getElementById('setupSubdominio').value.trim().toLowerCase();
+    const usuario = document.getElementById('setupUsuario').value.trim();
+    const pass1 = document.getElementById('setupPassword').value;
+    const pass2 = document.getElementById('setupPasswordConfirm').value;
+    const errorBox = document.getElementById('setupError');
+    errorBox.style.display = 'none';
+
+    if (!nombreEmpresa || !subdominio || !usuario || !pass1) return;
+    if (pass1.length < 4) {
+      errorBox.textContent = 'La contraseña debe tener al menos 4 caracteres.';
+      errorBox.style.display = 'block';
+      return;
+    }
+    if (pass1 !== pass2) {
+      errorBox.textContent = 'Las contraseñas no coinciden.';
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    try {
+      const data = await apiFetch('/api/auth/registrar-empresa', { method: 'POST', body: { nombreEmpresa, subdominio, usuario, password: pass1 } });
+      guardarSesion(data);
+      document.getElementById('setupForm').reset();
+      await iniciarSesionApp();
+    } catch (err) {
+      errorBox.textContent = err.message || 'No se pudo registrar la empresa.';
+      errorBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    cerrarSesion(false);
+  });
+
+  async function iniciarSesionApp() {
+    if (session.empresa) {
+      document.getElementById('empresaBadge').textContent = session.empresa.subdominio
+        ? session.empresa.subdominio + '.sticr.app' : session.empresa.nombre;
+    }
+    ocultarGate();
+    await Promise.all([cargarEmpleados(), cargarAdminConfig(), cargarUsuarios()]);
+    renderEmployees();
+    renderReportInputs();
+    aplicarPeriodoDefault();
+    actualizarCamposFeriado();
+    await cargarHistorialDesdeAPI();
+  }
+
+  async function iniciarAutenticacion() {
+    cargarSesionGuardada();
+    if (session.token) {
+      try {
+        await iniciarSesionApp();
+        return;
+      } catch (err) {
+        console.error('No se pudo restaurar la sesión', err);
+      }
+    }
+    mostrarGate();
+  }
+
+  // ============ Feriados de pago obligatorio (Costa Rica) ============
+
+  // Domingo de Pascua (algoritmo de Meeus/Jones/Butcher) para ubicar Jueves y Viernes Santo cada año
+  function calcularDomingoPascua(year) {
+    const a = year % 19;
+    const b = Math.floor(year / 100);
+    const c = year % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31);
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(year, month - 1, day);
+  }
+
+  function feriadosObligatoriosDelAnio(year) {
+    const pad = n => String(n).padStart(2, '0');
+    const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const pascua = calcularDomingoPascua(year);
+    const juevesSanto = new Date(pascua); juevesSanto.setDate(pascua.getDate() - 3);
+    const viernesSanto = new Date(pascua); viernesSanto.setDate(pascua.getDate() - 2);
+    return [
+      { nombre: 'Año Nuevo (1.° de enero)', fecha: `${year}-01-01` },
+      { nombre: 'Jueves Santo', fecha: toISO(juevesSanto) },
+      { nombre: 'Viernes Santo', fecha: toISO(viernesSanto) },
+      { nombre: 'Día de Juan Santamaría (11 de abril)', fecha: `${year}-04-11` },
+      { nombre: 'Día Internacional del Trabajo (1.° de mayo)', fecha: `${year}-05-01` },
+      { nombre: 'Anexión del Partido de Nicoya (25 de julio)', fecha: `${year}-07-25` },
+      { nombre: 'Día de la Madre (15 de agosto)', fecha: `${year}-08-15` },
+      { nombre: 'Día de la Independencia (15 de setiembre)', fecha: `${year}-09-15` },
+      { nombre: 'Navidad (25 de diciembre)', fecha: `${year}-12-25` }
+    ];
+  }
+
+  function feriadosEnPeriodo(periodStart, periodEnd) {
+    if (!periodStart || !periodEnd) return [];
+    const anioInicio = parseInt(periodStart.slice(0, 4));
+    const anioFin = parseInt(periodEnd.slice(0, 4));
+    const anios = anioInicio === anioFin ? [anioInicio] : [anioInicio, anioFin];
+    let feriados = [];
+    anios.forEach(y => { feriados = feriados.concat(feriadosObligatoriosDelAnio(y)); });
+    return feriados.filter(f => f.fecha >= periodStart && f.fecha <= periodEnd);
+  }
+
+  function actualizarCamposFeriado() {
+    const periodStart = document.getElementById('periodStart').value;
+    const periodEnd = document.getElementById('periodEnd').value;
+    const horasInput = document.getElementById('horasFeriado');
+    const select = document.getElementById('feriadoNombre');
+    const nota = document.getElementById('feriadoInfoNote');
+    const valorPrevio = select.value;
+
+    if (!periodStart || !periodEnd) {
+      horasInput.disabled = true;
+      horasInput.value = 0;
+      select.disabled = true;
+      select.innerHTML = '<option value="">— Selecciona el feriado —</option>';
+      nota.textContent = 'Define el período de la colilla para ver si cae algún feriado de pago obligatorio.';
+      nota.style.display = 'block';
+      return;
+    }
+
+    const feriados = feriadosEnPeriodo(periodStart, periodEnd);
+    if (feriados.length === 0) {
+      horasInput.disabled = true;
+      horasInput.value = 0;
+      select.disabled = true;
+      select.innerHTML = '<option value="">— Selecciona el feriado —</option>';
+      nota.textContent = 'Este período no incluye ningún feriado de pago obligatorio.';
+      nota.style.display = 'block';
+      return;
+    }
+
+    horasInput.disabled = false;
+    select.disabled = false;
+    select.innerHTML = '<option value="">— Selecciona el feriado —</option>' +
+      feriados.map(f => `<option value="${f.nombre}">${f.nombre} (${f.fecha})</option>`).join('');
+    if (feriados.some(f => f.nombre === valorPrevio)) select.value = valorPrevio;
+    nota.style.display = 'none';
+  }
+
+  document.getElementById('periodStart').addEventListener('change', actualizarCamposFeriado);
+  document.getElementById('periodEnd').addEventListener('change', actualizarCamposFeriado);
+
+  function calcularPeriodoQuincenalDefault() {
+    const hoy = new Date();
+    const year = hoy.getFullYear();
+    const month = hoy.getMonth();
+    const day = hoy.getDate();
+    const pad = n => String(n).padStart(2, '0');
+    let start, end;
+    if (day <= 15) {
+      start = `${year}-${pad(month + 1)}-01`;
+      end = `${year}-${pad(month + 1)}-15`;
+    } else {
+      const ultimoDia = new Date(year, month + 1, 0).getDate();
+      start = `${year}-${pad(month + 1)}-16`;
+      end = `${year}-${pad(month + 1)}-${pad(ultimoDia)}`;
+    }
+    return { start, end };
+  }
+
+  function aplicarPeriodoDefault() {
+    const { start, end } = calcularPeriodoQuincenalDefault();
+    const ps = document.getElementById('periodStart');
+    const pe = document.getElementById('periodEnd');
+    const rs = document.getElementById('reportStart');
+    const re = document.getElementById('reportEnd');
+    if (ps && !ps.value) ps.value = start;
+    if (pe && !pe.value) pe.value = end;
+    if (rs && !rs.value) rs.value = start;
+    if (re && !re.value) re.value = end;
+  }
+
+  // ============ Colaboradores ============
+
+  function mapEmpleado(r) {
+    return {
+      id: r.id,
+      nombre: r.nombre,
+      correo: r.correo || '',
+      salario: Number(r.salario),
+      fecha: (r.fecha_ingreso || '').slice(0, 10),
+      vacacionesDisponibles: Number(r.vacaciones_disponibles) || 0
+    };
+  }
+
+  async function cargarEmpleados() {
+    try {
+      const rows = await apiFetch('/api/empleados');
+      employees = rows.map(mapEmpleado);
+    } catch (err) {
+      console.error('No se pudieron cargar los colaboradores', err);
+      employees = [];
+    }
+  }
+
+  function renderEmployees() {
+    const list = document.getElementById('empList');
+    const emptyNote = document.getElementById('emptyNote');
+    list.innerHTML = '';
+    if (employees.length === 0) {
+      emptyNote.style.display = 'block';
+      renderColillaEmpSelect();
+      return;
+    }
+    emptyNote.style.display = 'none';
+    employees.forEach(emp => {
+      const li = document.createElement('li');
+      li.className = 'emp-item' + (emp.id === selectedId ? ' active' : '');
+      const antig = antiguedadTexto(emp.fecha);
+      li.innerHTML = `
+        <div onclick="irAColilla('${emp.id}')" style="flex:1; cursor:pointer;">
+          <div class="name">${escapeHtml(emp.nombre)}</div>
+          <div class="meta">₡${formatNumber(emp.salario)} / mes · ${antig} · ${emp.vacacionesDisponibles} día(s) vac.</div>
+        </div>
+        <button class="del" onclick="event.stopPropagation(); editEmployee('${emp.id}')" title="Editar" aria-label="Editar empleado" style="color: var(--ink);">✎</button>
+        <button class="del" onclick="event.stopPropagation(); deleteEmployee('${emp.id}')" title="Eliminar" aria-label="Eliminar empleado">✕</button>
+      `;
+      list.appendChild(li);
+    });
+    renderColillaEmpSelect();
+  }
+
+  function renderColillaEmpSelect() {
+    const select = document.getElementById('colillaEmpSelect');
+    const current = select.value;
+    select.innerHTML = '<option value="">— Selecciona un colaborador —</option>' +
+      employees.map(emp => `<option value="${emp.id}">${escapeHtml(emp.nombre)}</option>`).join('');
+    if (employees.some(e => e.id === current)) select.value = current;
+    else if (selectedId && employees.some(e => e.id === selectedId)) select.value = selectedId;
+  }
+
+  function irAColilla(id) {
+    selectEmployee(id);
+    switchTab('colilla');
+  }
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === name));
+    const panel = document.getElementById('tab-' + name);
+    if (panel) panel.classList.add('active');
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  document.getElementById('colillaEmpSelect').addEventListener('change', (e) => {
+    if (e.target.value) selectEmployee(e.target.value);
+  });
+
+  function renderReportInputs() {
+    const emptyNote = document.getElementById('reportEmptyNote');
+    document.getElementById('reportResultTable').style.display = 'none';
+    document.getElementById('exportarExcelBtn').style.display = 'none';
+    document.getElementById('reportMissingNote').style.display = 'none';
+    emptyNote.style.display = employees.length === 0 ? 'block' : 'none';
+  }
+
+  function antiguedadTexto(fechaStr) {
+    const inicio = new Date(fechaStr);
+    const hoy = new Date();
+    let meses = (hoy.getFullYear() - inicio.getFullYear()) * 12 + (hoy.getMonth() - inicio.getMonth());
+    if (meses < 12) return meses + ' meses de antigüedad';
+    const anios = Math.floor(meses / 12);
+    return anios + (anios === 1 ? ' año de antigüedad' : ' años de antigüedad');
+  }
+
+  function tieneVacaciones(fechaStr) {
+    const inicio = new Date(fechaStr);
+    const hoy = new Date();
+    const meses = (hoy.getFullYear() - inicio.getFullYear()) * 12 + (hoy.getMonth() - inicio.getMonth());
+    return meses >= 12;
+  }
+
+  function tieneAntiguedadMinima(fechaStr) {
+    if (!fechaStr) return false;
+    return tieneVacaciones(fechaStr);
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function formatNumber(n) {
+    return Math.round(n).toLocaleString('es-CR');
+  }
+
+  function formatFecha(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-CR') + ' ' + d.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function actualizarBloqueoVacacionesForm() {
+    const fecha = document.getElementById('empDate').value;
+    const vacInput = document.getElementById('empVacaciones');
+    const lockNote = document.getElementById('empVacacionesLockNote');
+    if (fecha && !tieneAntiguedadMinima(fecha)) {
+      vacInput.value = 0;
+      vacInput.disabled = true;
+      lockNote.style.display = 'block';
+    } else {
+      vacInput.disabled = false;
+      lockNote.style.display = 'none';
+    }
+  }
+  document.getElementById('empDate').addEventListener('change', actualizarBloqueoVacacionesForm);
+
+  document.getElementById('empForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nombre = document.getElementById('empName').value.trim();
+    const correo = document.getElementById('empEmail').value.trim().toLowerCase();
+    const salario = parseFloat(document.getElementById('empSalary').value);
+    const fecha = document.getElementById('empDate').value;
+    const vacacionesDisponibles = tieneAntiguedadMinima(fecha) ? (parseFloat(document.getElementById('empVacaciones').value) || 0) : 0;
+    const emailError = document.getElementById('empEmailError');
+    emailError.style.display = 'none';
+
+    if (!nombre || !salario || !fecha || !correo) return;
+
+    if (!EMAIL_REGEX.test(correo)) {
+      emailError.textContent = 'El correo no tiene un formato válido.';
+      emailError.style.display = 'block';
+      return;
+    }
+    const duplicado = employees.find(e => e.correo && e.correo.toLowerCase() === correo && e.id !== editingEmpId);
+    if (duplicado) {
+      emailError.textContent = 'Ya existe un colaborador con ese correo (' + duplicado.nombre + ').';
+      emailError.style.display = 'block';
+      return;
+    }
+
+    const btn = document.getElementById('empFormSubmitBtn');
+    btn.disabled = true;
+    const wasEditingId = editingEmpId;
+    const payload = { nombre, correo, salario, fechaIngreso: fecha, vacacionesDisponibles };
+    try {
+      if (editingEmpId) {
+        const actualizado = await apiFetch('/api/empleados/' + editingEmpId, { method: 'PUT', body: payload });
+        const idx = employees.findIndex(x => x.id === editingEmpId);
+        if (idx >= 0) employees[idx] = mapEmpleado(actualizado);
+        cancelarEdicionEmpleado();
+      } else {
+        const creado = await apiFetch('/api/empleados', { method: 'POST', body: payload });
+        employees.push(mapEmpleado(creado));
+      }
+      e.target.reset();
+      actualizarBloqueoVacacionesForm();
+      renderEmployees();
+      renderReportInputs();
+      if (selectedId && selectedId === wasEditingId) selectEmployee(selectedId);
+    } catch (err) {
+      emailError.textContent = err.message || 'No se pudo guardar el colaborador.';
+      emailError.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  function editEmployee(id) {
+    const emp = employees.find(e => e.id === id);
+    if (!emp) return;
+    editingEmpId = id;
+    document.getElementById('empName').value = emp.nombre;
+    document.getElementById('empEmail').value = emp.correo || '';
+    document.getElementById('empSalary').value = emp.salario;
+    document.getElementById('empDate').value = emp.fecha;
+    document.getElementById('empVacaciones').value = emp.vacacionesDisponibles;
+    document.getElementById('empEmailError').style.display = 'none';
+    actualizarBloqueoVacacionesForm();
+    document.getElementById('empFormSubmitBtn').textContent = 'Guardar cambios';
+    document.getElementById('empFormCancelBtn').style.display = 'inline-block';
+    document.getElementById('empFormTitle').textContent = 'Editando: ' + emp.nombre;
+    document.getElementById('empName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function cancelarEdicionEmpleado() {
+    editingEmpId = null;
+    document.getElementById('empForm').reset();
+    document.getElementById('empFormSubmitBtn').textContent = 'Agregar empleado';
+    document.getElementById('empFormCancelBtn').style.display = 'none';
+    document.getElementById('empFormTitle').textContent = 'Agregar empleado';
+    document.getElementById('empEmailError').style.display = 'none';
+    actualizarBloqueoVacacionesForm();
+  }
+
+  document.getElementById('empFormCancelBtn').addEventListener('click', cancelarEdicionEmpleado);
+
+  async function deleteEmployee(id) {
+    if (!confirm('¿Eliminar este colaborador? Esta acción no se puede deshacer.')) return;
+    try {
+      await apiFetch('/api/empleados/' + id, { method: 'DELETE' });
+    } catch (err) {
+      alert(err.message || 'No se pudo eliminar el colaborador.');
+      return;
+    }
+    employees = employees.filter(e => e.id !== id);
+    if (editingEmpId === id) cancelarEdicionEmpleado();
+    if (selectedId === id) {
+      selectedId = null;
+      document.getElementById('payForm').style.display = 'none';
+      document.getElementById('calcTable').style.display = 'none';
+      document.getElementById('runTitle').textContent = 'Generar colilla de pago';
+      document.getElementById('runHint').textContent = 'Selecciona un empleado para calcular su pago quincenal.';
+    }
+    renderEmployees();
+    renderReportInputs();
+  }
+
+  function selectEmployee(id) {
+    selectedId = id;
+    const emp = employees.find(e => e.id === id);
+    if (!emp) return;
+    renderEmployees();
+    document.getElementById('colillaEmpSelect').value = id;
+    document.getElementById('payForm').style.display = 'flex';
+    document.getElementById('runTitle').textContent = 'Colilla de: ' + emp.nombre;
+
+    const puedeVacaciones = tieneVacaciones(emp.fecha);
+    let hint = 'Salario mensual ₡' + formatNumber(emp.salario) + ' · ' + antiguedadTexto(emp.fecha) +
+      ' · Vacaciones disponibles: ' + emp.vacacionesDisponibles + ' día(s)';
+    document.getElementById('runHint').innerHTML = escapeHtml(hint);
+
+    const vacInput = document.getElementById('diasVacaciones');
+    vacInput.max = emp.vacacionesDisponibles;
+    if (emp.vacacionesDisponibles <= 0) {
+      vacInput.value = 0;
+      vacInput.disabled = true;
+      vacInput.title = 'Este colaborador no tiene días de vacaciones disponibles';
+    } else {
+      vacInput.disabled = false;
+      vacInput.title = '';
+    }
+
+    const alertBox = document.getElementById('antiguedadAlert');
+    if (!puedeVacaciones) {
+      alertBox.style.display = 'block';
+      alertBox.textContent = 'Este colaborador aún no cumple 1 año de antigüedad (' + antiguedadTexto(emp.fecha) + '). Por ley, todavía no tiene derecho a disfrutar días de vacaciones.';
+    } else {
+      alertBox.style.display = 'none';
+    }
+
+    document.getElementById('calcTable').style.display = 'none';
+    document.getElementById('colillaBox').style.display = 'none';
+  }
+
+  // ============ Colilla de pago (cálculo y guardado vía backend) ============
+
+  function construirLineas(d) {
+    const rows = [];
+    rows.push(['Salario base quincenal', d.salarioQuincenal, '']);
+    if (d.horasExtra > 0) rows.push(['Pago horas extra (' + d.horasExtra + ' h × 1.5)', d.pagoExtra, 'addition']);
+    if (d.horasFeriado > 0) {
+      const nombreFeriado = d.feriadoNombre ? ' — ' + d.feriadoNombre : '';
+      rows.push(['Pago feriado obligatorio trabajado (' + d.horasFeriado + ' h, día doble)' + nombreFeriado, d.pagoFeriado, 'addition']);
+    }
+    if (d.horasSinGoce > 0) rows.push(['Deducción horas sin goce (' + d.horasSinGoce + ' h)', -d.deduccionSinGoce, 'deduction']);
+    if (d.diasSinGoceCompletos > 0) rows.push(['Deducción días completos sin goce (' + d.diasSinGoceCompletos + ' d)', -d.deduccionSinGoceCompletos, 'deduction']);
+    if (d.diasVacaciones > 0) {
+      rows.push(['Deducción por días de vacación (' + d.diasVacaciones + ' d)', -d.deduccionVacaciones, 'deduction']);
+      rows.push(['Pago días de vacación (' + d.diasVacaciones + ' d)', d.pagoVacaciones, 'addition']);
+    }
+    if (d.diasIncapacidad > 0) {
+      rows.push(['Deducción por incapacidad (' + d.diasIncapacidad + ' d)', -d.deduccionIncapacidad, 'deduction']);
+      if (d.pagoPatronoIncapacidad > 0) rows.push(['Pago patronal incapacidad 40% (' + d.diasIncapPatronal + ' d)', d.pagoPatronoIncapacidad, 'addition']);
+    }
+    if (d.diasLicenciaMP > 0) {
+      rows.push(['Deducción licencia maternidad/paternidad (' + d.diasLicenciaMP + ' d)', -d.deduccionLicenciaMP, 'deduction']);
+      rows.push(['Pago patronal licencia M/P 50% (' + d.diasLicenciaMP + ' d)', d.pagoPatronoLicenciaMP, 'addition']);
+    }
+    if (d.diasLicenciaCuido > 0) {
+      rows.push(['Deducción licencia de cuido (' + d.diasLicenciaCuido + ' d)', -d.deduccionLicenciaCuido, 'deduction']);
+    }
+    rows.push(['Bruto quincenal', d.brutoQuincenal, 'total-row']);
+    rows.push(['CCSS (10.83%)', -d.ccss, 'deduction']);
+    rows.push(['Impuesto sobre la renta', -d.renta, 'deduction']);
+    rows.push(['Neto a pagar', d.neto, 'total-row']);
+    return rows;
+  }
+
+  function construirNotaCaja(d) {
+    const partes = [];
+    if (d.diasIncapacidad > 0 && d.pagoCajaIncapacidad > 0) {
+      partes.push('incapacidad ₡' + formatNumber(d.pagoCajaIncapacidad) + ' (' + d.diasIncapCaja + ' d al 60%)');
+    }
+    if (d.diasIncapSinCobertura > 0) {
+      partes.push(d.diasIncapSinCobertura + ' día(s) de incapacidad superan el tope de 15 días cubiertos por este cálculo');
+    }
+    if (d.diasLicenciaMP > 0 && d.pagoCajaLicenciaMP > 0) {
+      partes.push('licencia M/P ₡' + formatNumber(d.pagoCajaLicenciaMP) + ' (50%)');
+    }
+    if (d.diasLicenciaCuido > 0 && d.pagoCajaLicenciaCuido > 0) {
+      partes.push('licencia de cuido ₡' + formatNumber(d.pagoCajaLicenciaCuido) + ' (100%)');
+    }
+    if (partes.length === 0) return '';
+    return 'La CCSS deposita directamente al colaborador (no pasa por esta planilla): ' + partes.join('; ') + '.';
+  }
+
+  function pintarTabla(bodyId, rows) {
+    const body = document.getElementById(bodyId);
+    body.innerHTML = '';
+    rows.forEach(([label, amount, cls]) => {
+      const tr = document.createElement('tr');
+      if (cls) tr.className = cls;
+      tr.innerHTML = `<td>${label}</td><td class="num">₡${formatNumber(Math.abs(amount))}</td>`;
+      body.appendChild(tr);
+    });
+  }
+
+  document.getElementById('payForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const emp = employees.find(x => x.id === selectedId);
+    if (!emp) return;
+
+    const horasExtra = parseFloat(document.getElementById('horasExtra').value) || 0;
+    const horasSinGoce = parseFloat(document.getElementById('horasSinGoce').value) || 0;
+    const diasVacaciones = parseFloat(document.getElementById('diasVacaciones').value) || 0;
+    const diasSinGoceCompletos = parseFloat(document.getElementById('diasSinGoceCompletos').value) || 0;
+    const diasIncapacidad = parseFloat(document.getElementById('diasIncapacidad').value) || 0;
+    const diasLicenciaMP = parseFloat(document.getElementById('diasLicenciaMP').value) || 0;
+    const diasLicenciaCuido = parseFloat(document.getElementById('diasLicenciaCuido').value) || 0;
+    const horasFeriado = parseFloat(document.getElementById('horasFeriado').value) || 0;
+    const feriadoNombre = document.getElementById('feriadoNombre').value;
+    const periodStart = document.getElementById('periodStart').value;
+    const periodEnd = document.getElementById('periodEnd').value;
+
+    if (horasFeriado > 0 && !feriadoNombre) {
+      alert('Selecciona a cuál feriado corresponden esas horas trabajadas.');
+      return;
+    }
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+      const resp = await apiFetch('/api/colillas/calcular', {
+        method: 'POST',
+        body: {
+          empleadoId: emp.id, periodoInicio: periodStart, periodoFin: periodEnd, feriadoNombre,
+          horasExtra, horasSinGoce, diasVacaciones, diasSinGoceCompletos,
+          diasIncapacidad, diasLicenciaMP, diasLicenciaCuido, horasFeriado
+        }
+      });
+      const c = resp.resultado;
+      const datosLineas = { ...resp.inputs, feriadoNombre: resp.feriadoNombre, ...c };
+      const rows = construirLineas(datosLineas);
+
+      pintarTabla('calcBody', rows);
+      document.getElementById('calcTable').style.display = 'table';
+
+      document.getElementById('colillaMeta').textContent =
+        emp.nombre + ' · Período: ' + (periodStart || '—') + ' a ' + (periodEnd || '—');
+      document.getElementById('netoAmount').textContent = '₡' + formatNumber(c.neto);
+      colillaFilenameBase = 'colilla_' + emp.nombre.replace(/\s+/g, '_') + '_' + (periodStart || 'periodo') + '_' + (periodEnd || 'fin');
+      colillaContext = {
+        empNombre: emp.nombre, empCorreo: emp.correo,
+        periodStart, periodEnd,
+        neto: c.neto, brutoQuincenal: c.brutoQuincenal, ccss: c.ccss, renta: c.renta
+      };
+
+      pintarTabla('colillaBody', rows.filter(r => r[2] !== 'total-row' || r[0] === 'Bruto quincenal'));
+
+      const puedeVacaciones = tieneVacaciones(emp.fecha);
+      const vacNote = document.getElementById('vacNote');
+      if (resp.inputs.diasVacaciones > 0) {
+        vacNote.style.display = 'block';
+        vacNote.textContent = puedeVacaciones
+          ? resp.inputs.diasVacaciones + ' día(s) de vacaciones a disfrutar en este período. Saldo tras guardar: ' + (emp.vacacionesDisponibles - resp.inputs.diasVacaciones) + ' día(s).'
+          : 'Se registraron ' + resp.inputs.diasVacaciones + ' día(s) de vacaciones, pero este colaborador aún no cumple 1 año de antigüedad.';
+      } else {
+        vacNote.style.display = 'none';
+      }
+
+      const cajaNote = document.getElementById('cajaNote');
+      const notaCaja = construirNotaCaja(datosLineas);
+      if (notaCaja) {
+        cajaNote.style.display = 'block';
+        cajaNote.textContent = notaCaja;
+      } else {
+        cajaNote.style.display = 'none';
+      }
+
+      // La colilla queda pendiente de revisión: no se guarda ni se descuenta el saldo
+      // de vacaciones hasta presionar "Guardar colilla".
+      pendingColillaData = {
+        emp, periodStart, periodEnd,
+        horasExtra: resp.inputs.horasExtra, horasSinGoce: resp.inputs.horasSinGoce,
+        diasVacaciones: resp.inputs.diasVacaciones, diasSinGoceCompletos: resp.inputs.diasSinGoceCompletos,
+        diasIncapacidad: resp.inputs.diasIncapacidad, diasLicenciaMP: resp.inputs.diasLicenciaMP,
+        diasLicenciaCuido: resp.inputs.diasLicenciaCuido, horasFeriado: resp.inputs.horasFeriado,
+        feriadoNombre: resp.feriadoNombre
+      };
+      const guardarBtn = document.getElementById('guardarColillaBtn');
+      guardarBtn.disabled = false;
+      guardarBtn.textContent = 'Guardar colilla';
+      document.getElementById('pendingSaveNote').style.display = 'block';
+
+      document.getElementById('colillaBox').style.display = 'block';
+      document.getElementById('colillaBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      if (err.data && typeof err.data.vacacionesDisponibles === 'number') {
+        document.getElementById('diasVacaciones').value = err.data.vacacionesDisponibles;
+      }
+      alert(err.message || 'No se pudo calcular la colilla.');
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  });
+
+  document.getElementById('guardarColillaBtn').addEventListener('click', async () => {
+    if (!pendingColillaData) return;
+    const {
+      emp, periodStart, periodEnd, horasExtra, horasSinGoce, diasVacaciones,
+      diasSinGoceCompletos, diasIncapacidad, diasLicenciaMP, diasLicenciaCuido,
+      horasFeriado, feriadoNombre
+    } = pendingColillaData;
+
+    const btn = document.getElementById('guardarColillaBtn');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    try {
+      await apiFetch('/api/colillas/guardar', {
+        method: 'POST',
+        body: {
+          empleadoId: emp.id, periodoInicio: periodStart, periodoFin: periodEnd, feriadoNombre,
+          horasExtra, horasSinGoce, diasVacaciones, diasSinGoceCompletos,
+          diasIncapacidad, diasLicenciaMP, diasLicenciaCuido, horasFeriado
+        }
+      });
+
+      await cargarEmpleados();
+      renderEmployees();
+      renderReportInputs();
+
+      if (diasVacaciones > 0) {
+        const empActual = employees.find(x => x.id === emp.id);
+        if (empActual) {
+          document.getElementById('vacNote').textContent =
+            diasVacaciones + ' día(s) de vacaciones descontados. Saldo restante: ' + empActual.vacacionesDisponibles + ' día(s).';
+        }
+      }
+
+      await cargarHistorialDesdeAPI();
+
+      btn.textContent = 'Guardada ✓';
+      document.getElementById('pendingSaveNote').style.display = 'none';
+      pendingColillaData = null;
+    } catch (err) {
+      alert(err.message || 'No se pudo guardar la colilla.');
+      btn.disabled = false;
+      btn.textContent = 'Guardar colilla';
+    }
+  });
+
+  document.getElementById('closeColilla').addEventListener('click', () => {
+    document.getElementById('colillaBox').style.display = 'none';
+  });
+
+  function generarPdfColilla() {
+    const element = document.getElementById('colillaBox');
+    return html2canvas(element, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      onclone: (clonedDoc) => {
+        const actions = clonedDoc.getElementById('colillaBox').querySelector('.actions-row');
+        if (actions) actions.style.display = 'none';
+      }
+    }).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 40;
+      const imgWidth = pageWidth - margin * 2;
+      const imgHeight = canvas.height * (imgWidth / canvas.width);
+      pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+      return pdf;
+    });
+  }
+
+  document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+    const btn = document.getElementById('downloadPdfBtn');
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = 'Generando...';
+
+    generarPdfColilla().then(pdf => {
+      pdf.save(colillaFilenameBase + '.pdf');
+    }).catch(err => {
+      console.error('No se pudo generar el PDF', err);
+      alert('No se pudo generar el PDF. Intenta de nuevo.');
+    }).finally(() => {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    });
+  });
+
+  function construirTextoCorreo(ctx) {
+    const empresa = adminConfig.nombreEmpresa || 'la empresa';
+    const asunto = 'Colilla de pago - ' + empresa + ' - Período ' + (ctx.periodStart || '') + ' a ' + (ctx.periodEnd || '');
+    const cuerpo =
+      'Estimado(a) ' + ctx.empNombre + ',\n\n' +
+      'Adjunto encontrará su colilla de pago correspondiente al período del ' + (ctx.periodStart || '—') + ' al ' + (ctx.periodEnd || '—') + '.\n\n' +
+      'Resumen:\n' +
+      '- Salario bruto quincenal: ₡' + formatNumber(ctx.brutoQuincenal) + '\n' +
+      '- Deducción CCSS: ₡' + formatNumber(ctx.ccss) + '\n' +
+      '- Deducción de renta: ₡' + formatNumber(ctx.renta) + '\n' +
+      '- Neto a pagar: ₡' + formatNumber(ctx.neto) + '\n\n' +
+      'Por favor confirme la recepción de este correo.\n\n' +
+      'Saludos,\n' + empresa;
+    return { asunto, cuerpo };
+  }
+
+  document.getElementById('sendEmailBtn').addEventListener('click', () => {
+    if (!colillaContext) return;
+    if (!colillaContext.empCorreo) {
+      alert('Este colaborador no tiene un correo electrónico registrado. Agrégaselo en la pestaña Colaboradores.');
+      return;
+    }
+    if (!adminConfig.correoAdmin) {
+      alert('Primero define el correo administrativo en la pestaña Admin.');
+      switchTab('admin');
+      return;
+    }
+
+    const btn = document.getElementById('sendEmailBtn');
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = 'Preparando...';
+
+    generarPdfColilla().then(pdf => {
+      pdf.save(colillaFilenameBase + '.pdf');
+      const { asunto, cuerpo } = construirTextoCorreo(colillaContext);
+      const mailto = 'mailto:' + encodeURIComponent(colillaContext.empCorreo) +
+        '?subject=' + encodeURIComponent(asunto) +
+        '&body=' + encodeURIComponent(cuerpo + '\n\n(Recuerda adjuntar el PDF que se acaba de descargar: ' + colillaFilenameBase + '.pdf)');
+      window.location.href = mailto;
+    }).catch(err => {
+      console.error('No se pudo preparar el correo', err);
+      alert('No se pudo generar el PDF para el correo. Intenta de nuevo.');
+    }).finally(() => {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    });
+  });
+
+  // ============ Historial (colillas y reportes ya guardados en el backend) ============
+
+  // El backend devuelve columnas DATE serializadas como timestamp ISO completo
+  // (ej. "2026-09-01T06:00:00.000Z"); aquí solo nos interesa la fecha (YYYY-MM-DD).
+  function soloFecha(v) {
+    return v ? String(v).slice(0, 10) : v;
+  }
+
+  async function cargarHistorialDesdeAPI() {
+    try {
+      const [colillas, reportes] = await Promise.all([
+        apiFetch('/api/colillas'),
+        apiFetch('/api/reportes')
+      ]);
+      const entradasColillas = colillas.map(c => ({
+        tipo: 'colilla',
+        id: c.id,
+        periodStart: soloFecha(c.periodo_inicio), periodEnd: soloFecha(c.periodo_fin),
+        empId: c.empleado_id, empNombre: c.empleado_nombre,
+        timestamp: c.creado_en,
+        ...c.datos
+      }));
+      const entradasReportes = reportes.map(r => ({
+        tipo: 'reporte',
+        id: r.id,
+        periodStart: soloFecha(r.periodo_inicio), periodEnd: soloFecha(r.periodo_fin),
+        timestamp: r.creado_en,
+        rows: (r.datos.filas || []).map(f => ({ ...f, empId: f.empleadoId, periodStart: soloFecha(r.periodo_inicio), periodEnd: soloFecha(r.periodo_fin) })),
+        totBruto: r.datos.totales.totBruto, totCcss: r.datos.totales.totCcss,
+        totRenta: r.datos.totales.totRenta, totNeto: r.datos.totales.totNeto
+      }));
+      historyEntries = entradasColillas.concat(entradasReportes)
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    } catch (err) {
+      console.error('No se pudo cargar el historial', err);
+      historyEntries = [];
+    }
+    renderHistorial();
+  }
+
+  function renderHistorial(filterStart, filterEnd) {
+    const list = document.getElementById('historyList');
+    const emptyNote = document.getElementById('historyEmptyNote');
+    list.innerHTML = '';
+
+    let items = historyEntries;
+    if (filterStart) items = items.filter(it => !it.periodEnd || it.periodEnd >= filterStart);
+    if (filterEnd) items = items.filter(it => !it.periodStart || it.periodStart <= filterEnd);
+
+    if (items.length === 0) {
+      emptyNote.style.display = 'block';
+      return;
+    }
+    emptyNote.style.display = 'none';
+
+    // Agrupar por período registrado (inicio + fin)
+    const grupos = new Map();
+    items.forEach(entry => {
+      const key = (entry.periodStart || '—') + '_' + (entry.periodEnd || '—');
+      if (!grupos.has(key)) {
+        grupos.set(key, { periodStart: entry.periodStart, periodEnd: entry.periodEnd, entries: [] });
+      }
+      grupos.get(key).entries.push(entry);
+    });
+
+    const gruposOrdenados = Array.from(grupos.values()).sort((a, b) => {
+      const fa = a.periodStart || '';
+      const fb = b.periodStart || '';
+      return fb.localeCompare(fa);
+    });
+
+    gruposOrdenados.forEach(grupo => {
+      const header = document.createElement('li');
+      header.className = 'history-period-header';
+      const numColillas = grupo.entries.filter(e => e.tipo === 'colilla').length;
+      const tieneReporte = grupo.entries.some(e => e.tipo === 'reporte');
+      header.innerHTML = `Período: ${grupo.periodStart || '—'} a ${grupo.periodEnd || '—'} · ${numColillas} colilla(s)${tieneReporte ? ' · reporte generado' : ''}`;
+      list.appendChild(header);
+
+      grupo.entries.forEach(entry => {
+        const li = document.createElement('li');
+        li.className = 'history-item';
+        if (entry.tipo === 'colilla') {
+          li.innerHTML = `
+            <div>
+              <div class="h-main">${escapeHtml(entry.empNombre)}</div>
+              <div class="h-meta">Neto ₡${formatNumber(entry.neto)} · ${formatFecha(entry.timestamp)}</div>
+            </div>
+            <span class="h-tag">Colilla</span>
+          `;
+          li.addEventListener('click', () => verColillaHistorial(entry));
+        } else {
+          li.innerHTML = `
+            <div>
+              <div class="h-main">Reporte completo</div>
+              <div class="h-meta">${entry.rows.length} colaborador(es) · Neto total ₡${formatNumber(entry.totNeto)} · ${formatFecha(entry.timestamp)}</div>
+            </div>
+            <span class="h-tag">Reporte</span>
+          `;
+          li.addEventListener('click', () => verReporteHistorial(entry));
+        }
+        list.appendChild(li);
+      });
+    });
+  }
+
+  function verColillaHistorial(entry) {
+    document.getElementById('colillaMeta').textContent =
+      entry.empNombre + ' · Período: ' + (entry.periodStart || '—') + ' a ' + (entry.periodEnd || '—');
+    document.getElementById('netoAmount').textContent = '₡' + formatNumber(entry.neto);
+    colillaFilenameBase = 'colilla_' + entry.empNombre.replace(/\s+/g, '_') + '_' + (entry.periodStart || 'periodo') + '_' + (entry.periodEnd || 'fin');
+    const empRef = employees.find(e => e.id === entry.empId);
+    colillaContext = {
+      empNombre: entry.empNombre, empCorreo: empRef ? empRef.correo : '',
+      periodStart: entry.periodStart, periodEnd: entry.periodEnd,
+      neto: entry.neto, brutoQuincenal: entry.brutoQuincenal, ccss: entry.ccss, renta: entry.renta
+    };
+
+    const datosLineas = {
+      horasExtra: entry.horasExtra || 0, horasSinGoce: entry.horasSinGoce || 0, diasVacaciones: entry.diasVacaciones || 0,
+      diasSinGoceCompletos: entry.diasSinGoceCompletos || 0, diasIncapacidad: entry.diasIncapacidad || 0,
+      diasLicenciaMP: entry.diasLicenciaMP || 0, diasLicenciaCuido: entry.diasLicenciaCuido || 0,
+      horasFeriado: entry.horasFeriado || 0, feriadoNombre: entry.feriadoNombre || '',
+      ...entry
+    };
+    const rows = construirLineas(datosLineas);
+    pintarTabla('colillaBody', rows.filter(r => r[2] !== 'total-row' || r[0] === 'Bruto quincenal'));
+
+    document.getElementById('vacNote').style.display = 'none';
+    const cajaNote = document.getElementById('cajaNote');
+    const notaCaja = construirNotaCaja(datosLineas);
+    if (notaCaja) {
+      cajaNote.style.display = 'block';
+      cajaNote.textContent = notaCaja;
+    } else {
+      cajaNote.style.display = 'none';
+    }
+
+    document.getElementById('colillaBox').style.display = 'block';
+    switchTab('colilla');
+    document.getElementById('colillaBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function verReporteHistorial(entry) {
+    lastReportRows = entry.rows;
+    document.getElementById('reportStart').value = entry.periodStart || '';
+    document.getElementById('reportEnd').value = entry.periodEnd || '';
+    renderReportResults(entry.rows, false);
+    switchTab('reporte');
+    document.getElementById('reportResultTable').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  document.getElementById('historyFilterBtn').addEventListener('click', () => {
+    renderHistorial(document.getElementById('historyStart').value, document.getElementById('historyEnd').value);
+  });
+  document.getElementById('historyClearBtn').addEventListener('click', () => {
+    document.getElementById('historyStart').value = '';
+    document.getElementById('historyEnd').value = '';
+    renderHistorial();
+  });
+
+  // ============ Reporte general ============
+
+  function renderReportResults(rows) {
+    const body = document.getElementById('reportResultBody');
+    body.innerHTML = '';
+    let totBruto = 0, totCcss = 0, totRenta = 0, totNeto = 0;
+    rows.forEach(r => {
+      totBruto += r.brutoQuincenal; totCcss += r.ccss; totRenta += r.renta; totNeto += r.neto;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(r.nombre)}</td>
+        <td class="num">₡${formatNumber(r.brutoQuincenal)}</td>
+        <td class="num">₡${formatNumber(r.ccss)}</td>
+        <td class="num">₡${formatNumber(r.renta)}</td>
+        <td class="num">₡${formatNumber(r.neto)}</td>`;
+      body.appendChild(tr);
+    });
+    const foot = document.getElementById('reportResultFoot');
+    foot.innerHTML = `<tr class="total-row">
+        <td>Total planilla</td>
+        <td class="num">₡${formatNumber(totBruto)}</td>
+        <td class="num">₡${formatNumber(totCcss)}</td>
+        <td class="num">₡${formatNumber(totRenta)}</td>
+        <td class="num">₡${formatNumber(totNeto)}</td>
+      </tr>`;
+    document.getElementById('reportResultTable').style.display = 'table';
+    document.getElementById('exportarExcelBtn').style.display = 'inline-block';
+    document.getElementById('enviarTodasBtn').style.display = 'inline-block';
+    return { totBruto, totCcss, totRenta, totNeto };
+  }
+
+  document.getElementById('generarReporteBtn').addEventListener('click', async () => {
+    if (employees.length === 0) return;
+    const periodStart = document.getElementById('reportStart').value;
+    const periodEnd = document.getElementById('reportEnd').value;
+    if (!periodStart || !periodEnd) {
+      alert('Selecciona el inicio y el fin del período para buscar las colillas generadas.');
+      return;
+    }
+
+    const btn = document.getElementById('generarReporteBtn');
+    btn.disabled = true;
+    try {
+      const guardado = await apiFetch('/api/reportes/generar', { method: 'POST', body: { periodoInicio: periodStart, periodoFin: periodEnd } });
+      const datos = guardado.datos;
+      const faltantes = datos.faltantes || [];
+      const missingNote = document.getElementById('reportMissingNote');
+      if (faltantes.length > 0) {
+        missingNote.style.display = 'block';
+        missingNote.textContent = 'Sin colilla generada para este período: ' + faltantes.join(', ') + '.';
+      } else {
+        missingNote.style.display = 'none';
+      }
+
+      const rows = (datos.filas || []).map(f => ({ ...f, empId: f.empleadoId, periodStart, periodEnd }));
+      lastReportRows = rows;
+      renderReportResults(rows);
+      await cargarHistorialDesdeAPI();
+    } catch (err) {
+      document.getElementById('reportResultTable').style.display = 'none';
+      document.getElementById('exportarExcelBtn').style.display = 'none';
+      let msg = err.message || 'No hay ninguna colilla generada todavía para ese período exacto.';
+      if (err.data && err.data.faltantes && err.data.faltantes.length) {
+        msg += '\nFaltan: ' + err.data.faltantes.join(', ') + '.';
+      }
+      alert(msg);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('exportarExcelBtn').addEventListener('click', () => {
+    if (!lastReportRows || !lastReportRows.length) return;
+    const start = document.getElementById('reportStart').value || '';
+    const end = document.getElementById('reportEnd').value || '';
+
+    const data = lastReportRows.map(r => ({
+      'Colaborador': r.nombre,
+      'Salario mensual': Math.round(r.salarioQuincenal * 2),
+      'Salario base quincenal': Math.round(r.salarioQuincenal),
+      'Horas extra': r.horasExtra,
+      'Pago horas extra': Math.round(r.pagoExtra),
+      'Horas sin goce': r.horasSinGoce,
+      'Deducción sin goce (h)': Math.round(r.deduccionSinGoce),
+      'Días sin goce completos': r.diasSinGoceCompletos,
+      'Deducción sin goce (d)': Math.round(r.deduccionSinGoceCompletos),
+      'Días de vacación': r.diasVacaciones,
+      'Pago vacación': Math.round(r.pagoVacaciones),
+      'Días de incapacidad': r.diasIncapacidad,
+      'Pago patronal incapacidad (40%)': Math.round(r.pagoPatronoIncapacidad),
+      'Pago CCSS incapacidad (60%, informativo)': Math.round(r.pagoCajaIncapacidad),
+      'Días licencia M/P': r.diasLicenciaMP,
+      'Pago patronal licencia M/P (50%)': Math.round(r.pagoPatronoLicenciaMP),
+      'Pago CCSS licencia M/P (50%, informativo)': Math.round(r.pagoCajaLicenciaMP),
+      'Días licencia de cuido': r.diasLicenciaCuido,
+      'Pago CCSS licencia de cuido (100%, informativo)': Math.round(r.pagoCajaLicenciaCuido),
+      'Horas feriado obligatorio': r.horasFeriado || 0,
+      'Feriado': r.feriadoNombre || '',
+      'Pago feriado (día doble)': Math.round(r.pagoFeriado || 0),
+      'Bruto quincenal': Math.round(r.brutoQuincenal),
+      'CCSS (10.83%)': Math.round(r.ccss),
+      'Impuesto renta': Math.round(r.renta),
+      'Neto a pagar': Math.round(r.neto)
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = Object.keys(data[0] || {}).map(k => ({ wch: Math.max(14, k.length + 2) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Planilla');
+    const nombreArchivo = 'planilla_' + (start || 'periodo') + '_a_' + (end || 'fin') + '.xlsx';
+    XLSX.writeFile(wb, nombreArchivo);
+  });
+
+  async function enviarTodasLasColillas() {
+    if (!lastReportRows || lastReportRows.length === 0) return;
+    if (!adminConfig.correoAdmin) {
+      alert('Primero define el correo administrativo en la pestaña Admin.');
+      switchTab('admin');
+      return;
+    }
+
+    const conCorreo = [];
+    const sinCorreo = [];
+    lastReportRows.forEach(r => {
+      const emp = employees.find(e => e.id === r.empId);
+      if (emp && emp.correo) conCorreo.push({ row: r, emp });
+      else sinCorreo.push(r.nombre);
+    });
+
+    if (conCorreo.length === 0) {
+      alert('Ninguno de los colaboradores del reporte tiene correo registrado.');
+      return;
+    }
+
+    const btn = document.getElementById('enviarTodasBtn');
+    btn.disabled = true;
+    const originalText = btn.textContent;
+
+    switchTab('colilla');
+    document.getElementById('payForm').style.display = 'none';
+    document.getElementById('calcTable').style.display = 'none';
+
+    for (let i = 0; i < conCorreo.length; i++) {
+      const { row, emp } = conCorreo[i];
+      btn.textContent = 'Enviando ' + (i + 1) + '/' + conCorreo.length + '...';
+
+      const datosLineas = {
+        horasExtra: row.horasExtra || 0, horasSinGoce: row.horasSinGoce || 0, diasVacaciones: row.diasVacaciones || 0,
+        diasSinGoceCompletos: row.diasSinGoceCompletos || 0, diasIncapacidad: row.diasIncapacidad || 0,
+        diasLicenciaMP: row.diasLicenciaMP || 0, diasLicenciaCuido: row.diasLicenciaCuido || 0,
+        horasFeriado: row.horasFeriado || 0, feriadoNombre: row.feriadoNombre || '',
+        ...row
+      };
+
+      colillaFilenameBase = 'colilla_' + row.nombre.replace(/\s+/g, '_') + '_' + (row.periodStart || 'periodo') + '_' + (row.periodEnd || 'fin');
+      colillaContext = {
+        empNombre: row.nombre, empCorreo: emp.correo,
+        periodStart: row.periodStart, periodEnd: row.periodEnd,
+        neto: row.neto, brutoQuincenal: row.brutoQuincenal, ccss: row.ccss, renta: row.renta
+      };
+      document.getElementById('colillaMeta').textContent =
+        row.nombre + ' · Período: ' + (row.periodStart || '—') + ' a ' + (row.periodEnd || '—');
+      document.getElementById('netoAmount').textContent = '₡' + formatNumber(row.neto);
+      const rows2 = construirLineas(datosLineas);
+      pintarTabla('colillaBody', rows2.filter(r2 => r2[2] !== 'total-row' || r2[0] === 'Bruto quincenal'));
+      document.getElementById('vacNote').style.display = 'none';
+      const cajaNote = document.getElementById('cajaNote');
+      const notaCaja = construirNotaCaja(datosLineas);
+      if (notaCaja) { cajaNote.style.display = 'block'; cajaNote.textContent = notaCaja; }
+      else { cajaNote.style.display = 'none'; }
+      document.getElementById('pendingSaveNote').style.display = 'none';
+      document.getElementById('colillaBox').style.display = 'block';
+
+      try {
+        const pdf = await generarPdfColilla();
+        pdf.save(colillaFilenameBase + '.pdf');
+        const { asunto, cuerpo } = construirTextoCorreo(colillaContext);
+        const mailto = 'mailto:' + encodeURIComponent(colillaContext.empCorreo) +
+          '?subject=' + encodeURIComponent(asunto) +
+          '&body=' + encodeURIComponent(cuerpo + '\n\n(Recuerda adjuntar el PDF que se acaba de descargar: ' + colillaFilenameBase + '.pdf)');
+        window.location.href = mailto;
+      } catch (err) {
+        console.error('Error enviando colilla de ' + row.nombre, err);
+      }
+
+      // pequeña pausa para que el navegador procese cada correo antes de continuar
+      await new Promise(res => setTimeout(res, 900));
+    }
+
+    btn.disabled = false;
+    btn.textContent = originalText;
+    switchTab('reporte');
+
+    let resumen = 'Se prepararon ' + conCorreo.length + ' colilla(s) para envío (PDF descargado y correo abierto para cada una).';
+    if (sinCorreo.length > 0) resumen += ' Sin correo registrado (omitidos): ' + sinCorreo.join(', ') + '.';
+    alert(resumen);
+  }
+
+  document.getElementById('enviarTodasBtn').addEventListener('click', enviarTodasLasColillas);
+
+  // ============ Admin: datos de la empresa ============
+
+  async function cargarAdminConfig() {
+    try {
+      const emp = await apiFetch('/api/admin/empresa');
+      adminConfig = { nombreEmpresa: emp.nombre || '', correoAdmin: emp.correo_admin || '', subdominio: emp.subdominio || '' };
+    } catch (err) {
+      console.error('No se pudo cargar la configuración de la empresa', err);
+      adminConfig = { nombreEmpresa: '', correoAdmin: '', subdominio: '' };
+    }
+    document.getElementById('adminNombreEmpresa').value = adminConfig.nombreEmpresa;
+    document.getElementById('adminCorreo').value = adminConfig.correoAdmin;
+    document.getElementById('empresaBadge').textContent = adminConfig.subdominio
+      ? adminConfig.subdominio + '.sticr.app' : (adminConfig.nombreEmpresa || 'tuempresa.sticr.com');
+  }
+
+  document.getElementById('adminForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nombreEmpresa = document.getElementById('adminNombreEmpresa').value.trim();
+    const correoAdmin = document.getElementById('adminCorreo').value.trim();
+    const errorBox = document.getElementById('adminCorreoError');
+    errorBox.style.display = 'none';
+
+    if (correoAdmin && !EMAIL_REGEX.test(correoAdmin)) {
+      errorBox.textContent = 'El correo administrativo no tiene un formato válido.';
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    try {
+      const actualizado = await apiFetch('/api/admin/empresa', { method: 'PUT', body: { nombre: nombreEmpresa, correoAdmin } });
+      adminConfig = { nombreEmpresa: actualizado.nombre || '', correoAdmin: actualizado.correo_admin || '', subdominio: actualizado.subdominio || '' };
+      document.getElementById('empresaBadge').textContent = adminConfig.subdominio
+        ? adminConfig.subdominio + '.sticr.app' : (adminConfig.nombreEmpresa || 'tuempresa.sticr.com');
+
+      const savedNote = document.getElementById('adminSavedNote');
+      savedNote.style.display = 'block';
+      setTimeout(() => { savedNote.style.display = 'none'; }, 3000);
+    } catch (err) {
+      errorBox.textContent = err.message || 'No se pudo guardar la configuración.';
+      errorBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ============ Admin: usuarios administradores ============
+
+  async function cargarUsuarios() {
+    try {
+      usuarios = await apiFetch('/api/admin/usuarios');
+    } catch (err) {
+      console.error('No se pudieron cargar los usuarios', err);
+      usuarios = [];
+    }
+    renderUsuarios();
+  }
+
+  function renderUsuarios() {
+    const list = document.getElementById('usuariosList');
+    list.innerHTML = '';
+    if (usuarios.length === 0) {
+      list.innerHTML = '<li class="empty-note" style="list-style:none;">Aún no hay usuarios administradores.</li>';
+      return;
+    }
+    usuarios.forEach(u => {
+      const li = document.createElement('li');
+      li.className = 'emp-item';
+      li.innerHTML = `
+        <div style="flex:1;">
+          <div class="name">${escapeHtml(u.usuario)}</div>
+        </div>
+        <button class="del" onclick="editarUsuario('${u.id}')" title="Editar" aria-label="Editar usuario" style="color: var(--ink);">✎</button>
+        <button class="del" onclick="eliminarUsuario('${u.id}')" title="Eliminar" aria-label="Eliminar usuario">✕</button>
+      `;
+      list.appendChild(li);
+    });
+  }
+
+  function editarUsuario(id) {
+    const u = usuarios.find(x => x.id === id);
+    if (!u) return;
+    editingUsuarioId = id;
+    document.getElementById('usuarioNombre').value = u.usuario;
+    document.getElementById('usuarioPassword').value = '';
+    document.getElementById('usuarioPasswordConfirm').value = '';
+    document.getElementById('usuarioFormError').style.display = 'none';
+    document.getElementById('usuarioFormTitle').textContent = 'Editando: ' + u.usuario;
+    document.getElementById('usuarioFormSubmitBtn').textContent = 'Guardar cambios';
+    document.getElementById('usuarioFormCancelBtn').style.display = 'inline-block';
+  }
+
+  function cancelarEdicionUsuario() {
+    editingUsuarioId = null;
+    document.getElementById('usuarioForm').reset();
+    document.getElementById('usuarioFormError').style.display = 'none';
+    document.getElementById('usuarioFormTitle').textContent = 'Crear usuario';
+    document.getElementById('usuarioFormSubmitBtn').textContent = 'Crear usuario';
+    document.getElementById('usuarioFormCancelBtn').style.display = 'none';
+  }
+  document.getElementById('usuarioFormCancelBtn').addEventListener('click', cancelarEdicionUsuario);
+
+  async function eliminarUsuario(id) {
+    if (usuarios.length <= 1) {
+      alert('Debe existir al menos un usuario administrador. Crea otro antes de eliminar este.');
+      return;
+    }
+    if (!confirm('¿Eliminar este usuario administrador? Esta acción no se puede deshacer.')) return;
+    try {
+      await apiFetch('/api/admin/usuarios/' + id, { method: 'DELETE' });
+    } catch (err) {
+      alert(err.message || 'No se pudo eliminar el usuario.');
+      return;
+    }
+    if (editingUsuarioId === id) cancelarEdicionUsuario();
+    await cargarUsuarios();
+  }
+
+  document.getElementById('usuarioForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nombre = document.getElementById('usuarioNombre').value.trim();
+    const pass1 = document.getElementById('usuarioPassword').value;
+    const pass2 = document.getElementById('usuarioPasswordConfirm').value;
+    const errorBox = document.getElementById('usuarioFormError');
+    errorBox.style.display = 'none';
+    if (!nombre) return;
+
+    const duplicado = usuarios.find(u => u.usuario.toLowerCase() === nombre.toLowerCase() && u.id !== editingUsuarioId);
+    if (duplicado) {
+      errorBox.textContent = 'Ya existe un usuario con ese nombre.';
+      errorBox.style.display = 'block';
+      return;
+    }
+    if (!editingUsuarioId && !pass1) {
+      errorBox.textContent = 'Debes definir una contraseña.';
+      errorBox.style.display = 'block';
+      return;
+    }
+    if (pass1 && pass1.length < 4) {
+      errorBox.textContent = 'La contraseña debe tener al menos 4 caracteres.';
+      errorBox.style.display = 'block';
+      return;
+    }
+    if (pass1 && pass1 !== pass2) {
+      errorBox.textContent = 'Las contraseñas no coinciden.';
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    try {
+      if (editingUsuarioId) {
+        const body = { usuario: nombre };
+        if (pass1) body.password = pass1;
+        await apiFetch('/api/admin/usuarios/' + editingUsuarioId, { method: 'PUT', body });
+        cancelarEdicionUsuario();
+      } else {
+        await apiFetch('/api/admin/usuarios', { method: 'POST', body: { usuario: nombre, password: pass1 } });
+        document.getElementById('usuarioForm').reset();
+      }
+      await cargarUsuarios();
+    } catch (err) {
+      errorBox.textContent = err.message || 'No se pudo guardar el usuario.';
+      errorBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ============ Arranque ============
+
+  iniciarAutenticacion();
+</script>
+</body>
+</html>
