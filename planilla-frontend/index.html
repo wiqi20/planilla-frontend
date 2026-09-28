@@ -278,11 +278,6 @@
     <h2 style="margin-bottom:2px;">Control de Planilla</h2>
     <p class="hint" id="gateSubtitle">Ingresa con tu usuario administrativo.</p>
 
-    <div class="field">
-      <label for="apiBaseUrl">URL del backend</label>
-      <input type="url" id="apiBaseUrl" required placeholder="https://tu-backend.up.railway.app">
-    </div>
-
     <form class="stack" id="loginForm">
       <div class="field">
         <label for="loginSubdominio">Subdominio de tu empresa</label>
@@ -298,34 +293,6 @@
       </div>
       <div class="note" id="loginError" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink);"></div>
       <button type="submit">Ingresar</button>
-      <button type="button" class="secondary" id="mostrarSetupBtn">¿Empresa nueva? Regístrala aquí</button>
-    </form>
-
-    <form class="stack" id="setupForm" style="display:none;">
-      <p class="hint">Registra tu empresa y su primer usuario administrador.</p>
-      <div class="field">
-        <label for="setupNombreEmpresa">Nombre de la empresa</label>
-        <input type="text" id="setupNombreEmpresa" required placeholder="Ej. Comercial Rojas S.A.">
-      </div>
-      <div class="field">
-        <label for="setupSubdominio">Subdominio (sin espacios, minúsculas)</label>
-        <input type="text" id="setupSubdominio" required pattern="[a-z0-9-]+" placeholder="ej. comercialrojas">
-      </div>
-      <div class="field">
-        <label for="setupUsuario">Usuario</label>
-        <input type="text" id="setupUsuario" required autocomplete="username">
-      </div>
-      <div class="field">
-        <label for="setupPassword">Contraseña</label>
-        <input type="password" id="setupPassword" required minlength="4" autocomplete="new-password">
-      </div>
-      <div class="field">
-        <label for="setupPasswordConfirm">Confirmar contraseña</label>
-        <input type="password" id="setupPasswordConfirm" required minlength="4" autocomplete="new-password">
-      </div>
-      <div class="note" id="setupError" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink);"></div>
-      <button type="submit">Registrar empresa y entrar</button>
-      <button type="button" class="secondary" id="mostrarLoginBtn">Ya tengo una cuenta — ingresar</button>
     </form>
   </div>
 </div>
@@ -641,6 +608,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
   // ============ Estado y configuración ============
+  const API_BASE_URL = 'https://planilla-api.sticr.app'; // backend vinculado directamente, sin campo manual
   const BASE_DOMAINS = ['sticr.app', 'sticr.com']; // dominios propios: un host bajo estos se trata como subdominio de un cliente
 
   let employees = [];
@@ -676,7 +644,7 @@
   function aplicarSubdominioDetectado() {
     const sub = detectarSubdominio();
     if (!sub) return;
-    ['loginSubdominio', 'setupSubdominio'].forEach(id => {
+    ['loginSubdominio'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.value = sub;
@@ -686,18 +654,9 @@
     });
   }
 
-  function cargarApiBase() {
-    const guardada = localStorage.getItem('planilla_api_base');
-    if (guardada) document.getElementById('apiBaseUrl').value = guardada;
-  }
-
   function getApiBase() {
-    return (document.getElementById('apiBaseUrl').value || '').trim().replace(/\/+$/, '');
+    return API_BASE_URL.replace(/\/+$/, '');
   }
-
-  document.getElementById('apiBaseUrl').addEventListener('change', () => {
-    try { localStorage.setItem('planilla_api_base', getApiBase()); } catch (e) { /* ignora */ }
-  });
 
   async function apiFetch(path, options = {}) {
     const base = getApiBase();
@@ -751,24 +710,13 @@
   }
 
   function mostrarLoginView() {
-    document.getElementById('setupForm').style.display = 'none';
     document.getElementById('loginForm').style.display = 'flex';
     document.getElementById('gateSubtitle').textContent = 'Ingresa con tu usuario administrativo.';
   }
 
-  function mostrarSetupView() {
-    document.getElementById('setupForm').style.display = 'flex';
-    document.getElementById('loginForm').style.display = 'none';
-    document.getElementById('gateSubtitle').textContent = 'Registra tu empresa y su primer usuario administrador.';
-  }
-
-  document.getElementById('mostrarSetupBtn').addEventListener('click', mostrarSetupView);
-  document.getElementById('mostrarLoginBtn').addEventListener('click', mostrarLoginView);
-
   function mostrarGate() {
     mostrarLoginView();
     aplicarSubdominioDetectado();
-    cargarApiBase();
     document.getElementById('loginGate').style.display = 'flex';
     document.getElementById('appWrap').style.display = 'none';
   }
@@ -794,43 +742,6 @@
       await iniciarSesionApp();
     } catch (err) {
       errorBox.textContent = err.message || 'Usuario o contraseña incorrectos.';
-      errorBox.style.display = 'block';
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  document.getElementById('setupForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const nombreEmpresa = document.getElementById('setupNombreEmpresa').value.trim();
-    const subdominio = document.getElementById('setupSubdominio').value.trim().toLowerCase();
-    const usuario = document.getElementById('setupUsuario').value.trim();
-    const pass1 = document.getElementById('setupPassword').value;
-    const pass2 = document.getElementById('setupPasswordConfirm').value;
-    const errorBox = document.getElementById('setupError');
-    errorBox.style.display = 'none';
-
-    if (!nombreEmpresa || !subdominio || !usuario || !pass1) return;
-    if (pass1.length < 4) {
-      errorBox.textContent = 'La contraseña debe tener al menos 4 caracteres.';
-      errorBox.style.display = 'block';
-      return;
-    }
-    if (pass1 !== pass2) {
-      errorBox.textContent = 'Las contraseñas no coinciden.';
-      errorBox.style.display = 'block';
-      return;
-    }
-
-    const btn = e.target.querySelector('button[type="submit"]');
-    btn.disabled = true;
-    try {
-      const data = await apiFetch('/api/auth/registrar-empresa', { method: 'POST', body: { nombreEmpresa, subdominio, usuario, password: pass1 } });
-      guardarSesion(data);
-      document.getElementById('setupForm').reset();
-      await iniciarSesionApp();
-    } catch (err) {
-      errorBox.textContent = err.message || 'No se pudo registrar la empresa.';
       errorBox.style.display = 'block';
     } finally {
       btn.disabled = false;
