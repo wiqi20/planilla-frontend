@@ -278,18 +278,14 @@
     <h2 style="margin-bottom:2px;">Control de Planilla</h2>
     <p class="hint" id="gateSubtitle">Ingresa con tu usuario administrativo.</p>
 
-    <form class="stack" id="loginForm">
-      <div class="field">
-        <label for="loginSubdominio">Subdominio de tu empresa</label>
-        <input type="text" id="loginSubdominio" required autocomplete="organization" placeholder="ej. comercialrojas">
-      </div>
+    <form class="stack" id="loginForm" autocomplete="off">
       <div class="field">
         <label for="loginUsuario">Usuario</label>
-        <input type="text" id="loginUsuario" required autocomplete="username">
+        <input type="text" id="loginUsuario" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="">
       </div>
       <div class="field">
         <label for="loginPassword">Contraseña</label>
-        <input type="password" id="loginPassword" required autocomplete="current-password">
+        <input type="password" id="loginPassword" required autocomplete="new-password" value="">
       </div>
       <div class="note" id="loginError" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink);"></div>
       <button type="submit">Ingresar</button>
@@ -609,7 +605,7 @@
 <script>
   // ============ Estado y configuración ============
   const API_BASE_URL = 'https://planilla-api.sticr.app'; // backend vinculado directamente, sin campo manual
-  const BASE_DOMAINS = ['sticr.app', 'sticr.com']; // dominios propios: un host bajo estos se trata como subdominio de un cliente
+  const EMPRESA_SUBDOMINIO = 'admin'; // instancia única vendida individualmente: no se pide subdominio en el login
 
   let employees = [];
   let selectedId = null;
@@ -627,32 +623,6 @@
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   // ============ Backend: URL, subdominio y sesión ============
-
-  function detectarSubdominio() {
-    const host = window.location.hostname;
-    for (const base of BASE_DOMAINS) {
-      if (host === base || host === 'www.' + base) return null; // dominio raíz, sin cliente específico
-      const suffix = '.' + base;
-      if (host.endsWith(suffix)) {
-        const sub = host.slice(0, -suffix.length);
-        if (sub && sub !== 'www') return sub;
-      }
-    }
-    return null;
-  }
-
-  function aplicarSubdominioDetectado() {
-    const sub = detectarSubdominio();
-    if (!sub) return;
-    ['loginSubdominio'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.value = sub;
-      el.readOnly = true;
-      el.title = 'Detectado automáticamente desde ' + window.location.hostname;
-      el.style.background = 'color-mix(in srgb, var(--ink) 6%, var(--paper))';
-    });
-  }
 
   function getApiBase() {
     return API_BASE_URL.replace(/\/+$/, '');
@@ -716,7 +686,6 @@
 
   function mostrarGate() {
     mostrarLoginView();
-    aplicarSubdominioDetectado();
     document.getElementById('loginGate').style.display = 'flex';
     document.getElementById('appWrap').style.display = 'none';
   }
@@ -728,7 +697,7 @@
 
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const subdominio = document.getElementById('loginSubdominio').value.trim().toLowerCase();
+    const subdominio = EMPRESA_SUBDOMINIO;
     const usuario = document.getElementById('loginUsuario').value.trim();
     const password = document.getElementById('loginPassword').value;
     const errorBox = document.getElementById('loginError');
