@@ -903,7 +903,7 @@
     emptyNote.style.display = 'none';
     employees.forEach(emp => {
       const li = document.createElement('li');
-      li.className = 'emp-item' + (emp.id === selectedId ? ' active' : '');
+      li.className = 'emp-item' + (String(emp.id) === String(selectedId) ? ' active' : '');
       const antig = antiguedadTexto(emp.fecha);
       li.innerHTML = `
         <div onclick="irAColilla('${emp.id}')" style="flex:1; cursor:pointer;">
@@ -923,8 +923,8 @@
     const current = select.value;
     select.innerHTML = '<option value="">— Selecciona un colaborador —</option>' +
       employees.map(emp => `<option value="${emp.id}">${escapeHtml(emp.nombre)}</option>`).join('');
-    if (employees.some(e => e.id === current)) select.value = current;
-    else if (selectedId && employees.some(e => e.id === selectedId)) select.value = selectedId;
+    if (employees.some(e => String(e.id) === String(current))) select.value = current;
+    else if (selectedId && employees.some(e => String(e.id) === String(selectedId))) select.value = selectedId;
   }
 
   function irAColilla(id) {
@@ -1023,7 +1023,7 @@
       emailError.style.display = 'block';
       return;
     }
-    const duplicado = employees.find(e => e.correo && e.correo.toLowerCase() === correo && e.id !== editingEmpId);
+    const duplicado = employees.find(e => e.correo && e.correo.toLowerCase() === correo && String(e.id) !== String(editingEmpId));
     if (duplicado) {
       emailError.textContent = 'Ya existe un colaborador con ese correo (' + duplicado.nombre + ').';
       emailError.style.display = 'block';
@@ -1037,7 +1037,7 @@
     try {
       if (editingEmpId) {
         const actualizado = await apiFetch('/api/empleados/' + editingEmpId, { method: 'PUT', body: payload });
-        const idx = employees.findIndex(x => x.id === editingEmpId);
+        const idx = employees.findIndex(x => String(x.id) === String(editingEmpId));
         if (idx >= 0) employees[idx] = mapEmpleado(actualizado);
         cancelarEdicionEmpleado();
       } else {
@@ -1048,7 +1048,7 @@
       actualizarBloqueoVacacionesForm();
       renderEmployees();
       renderReportInputs();
-      if (selectedId && selectedId === wasEditingId) selectEmployee(selectedId);
+      if (selectedId && String(selectedId) === String(wasEditingId)) selectEmployee(selectedId);
     } catch (err) {
       emailError.textContent = err.message || 'No se pudo guardar el colaborador.';
       emailError.style.display = 'block';
@@ -1058,7 +1058,7 @@
   });
 
   function editEmployee(id) {
-    const emp = employees.find(e => e.id === id);
+    const emp = employees.find(e => String(e.id) === String(id));
     if (!emp) return;
     editingEmpId = id;
     document.getElementById('empName').value = emp.nombre;
@@ -1094,9 +1094,9 @@
       alert(err.message || 'No se pudo eliminar el colaborador.');
       return;
     }
-    employees = employees.filter(e => e.id !== id);
-    if (editingEmpId === id) cancelarEdicionEmpleado();
-    if (selectedId === id) {
+    employees = employees.filter(e => String(e.id) !== String(id));
+    if (String(editingEmpId) === String(id)) cancelarEdicionEmpleado();
+    if (String(selectedId) === String(id)) {
       selectedId = null;
       document.getElementById('payForm').style.display = 'none';
       document.getElementById('calcTable').style.display = 'none';
@@ -1109,7 +1109,7 @@
 
   function selectEmployee(id) {
     selectedId = id;
-    const emp = employees.find(e => e.id === id);
+    const emp = employees.find(e => String(e.id) === String(id));
     if (!emp) return;
     renderEmployees();
     document.getElementById('colillaEmpSelect').value = id;
@@ -1209,7 +1209,7 @@
 
   document.getElementById('payForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const emp = employees.find(x => x.id === selectedId);
+    const emp = employees.find(x => String(x.id) === String(selectedId));
     if (!emp) return;
 
     const horasExtra = parseFloat(document.getElementById('horasExtra').value) || 0;
@@ -1887,7 +1887,7 @@
   }
 
   function editarUsuario(id) {
-    const u = usuarios.find(x => x.id === id);
+    const u = usuarios.find(x => String(x.id) === String(id));
     if (!u) return;
     editingUsuarioId = id;
     document.getElementById('usuarioNombre').value = u.usuario;
@@ -1921,7 +1921,7 @@
       alert(err.message || 'No se pudo eliminar el usuario.');
       return;
     }
-    if (editingUsuarioId === id) cancelarEdicionUsuario();
+    if (String(editingUsuarioId) === String(id)) cancelarEdicionUsuario();
     await cargarUsuarios();
   }
 
@@ -1934,7 +1934,7 @@
     errorBox.style.display = 'none';
     if (!nombre) return;
 
-    const duplicado = usuarios.find(u => u.usuario.toLowerCase() === nombre.toLowerCase() && u.id !== editingUsuarioId);
+    const duplicado = usuarios.find(u => u.usuario.toLowerCase() === nombre.toLowerCase() && String(u.id) !== String(editingUsuarioId));
     if (duplicado) {
       errorBox.textContent = 'Ya existe un usuario con ese nombre.';
       errorBox.style.display = 'block';
