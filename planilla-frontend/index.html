@@ -149,9 +149,10 @@
   .emp-item.active { background: var(--paper-raised); }
   .emp-item .name { font-weight: 700; font-size: 16px; }
   .emp-item .meta { font-size: 13px; color: var(--ink-soft); }
-  .emp-item .del {
+  .del {
     background: none; border: none; color: var(--ink); cursor: pointer;
     font-size: 16px; padding: 2px 6px; line-height: 1;
+    font-weight: 400; text-transform: none; letter-spacing: normal;
   }
   .empty-note {
     font-size: 16px; color: var(--ink-soft); padding: 14px 4px;
@@ -187,6 +188,13 @@
     background: var(--paper);
     color: var(--ink);
     width: 100%;
+  }
+  input[type=date] { color-scheme: light; }
+  html[data-theme="dark"] input[type=date] {
+    color-scheme: dark;
+  }
+  html[data-theme="dark"] input[type=date]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.4);
   }
   input:focus, button:focus-visible, select:focus-visible {
     outline: 2px solid var(--ink);
@@ -339,6 +347,7 @@
   <nav class="tabs" id="tabsNav">
     <button class="tab-btn active" data-tab="empleados">Colaboradores</button>
     <button class="tab-btn" data-tab="colilla">Colilla de pago</button>
+    <button class="tab-btn" data-tab="boletas">Boleta de vacaciones</button>
     <button class="tab-btn" data-tab="reporte">Reporte general</button>
     <button class="tab-btn" data-tab="historial">Historial</button>
     <button class="tab-btn" data-tab="admin">Admin</button>
@@ -504,6 +513,64 @@
     </div>
   </div>
 
+  <div class="tab-panel" id="tab-boletas">
+    <div class="main-grid">
+      <div class="panel">
+        <div class="run-header">
+          <div>
+            <h2 id="boletaFormTitle">Generar boleta de vacaciones</h2>
+            <p class="hint" id="boletaFormHint">Selecciona un colaborador para ver sus días disponibles.</p>
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:6px;">
+          <label for="boletaEmpSelect">Colaborador</label>
+          <select id="boletaEmpSelect">
+            <option value="">— Selecciona un colaborador —</option>
+          </select>
+        </div>
+
+        <form class="stack" id="boletaForm" style="display:none;">
+          <div class="note" id="boletaDiasDisponiblesNote"></div>
+          <div class="field">
+            <label for="boletaDias">Cantidad de días a disfrutar</label>
+            <input type="number" id="boletaDias" min="0.5" step="0.5" required>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="boletaInicio">Inicio del período a disfrutar</label>
+              <input type="date" id="boletaInicio" required>
+            </div>
+            <div class="field">
+              <label for="boletaFin">Fin del período a disfrutar</label>
+              <input type="date" id="boletaFin" required>
+            </div>
+          </div>
+          <div class="note" id="boletaFormError" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink);"></div>
+          <div class="actions-row" style="margin-top:0;">
+            <button type="submit" id="boletaFormSubmitBtn">Generar boleta</button>
+            <button type="button" class="secondary" id="boletaFormCancelBtn" style="display:none;">Cancelar edición</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="colilla" id="boletaBox" style="display:none;">
+        <div class="colilla-head">
+          <div>
+            <h3>Boleta de Vacaciones</h3>
+            <div class="meta" id="boletaMeta"></div>
+          </div>
+        </div>
+        <div id="boletaTexto" style="white-space:pre-line; line-height:1.7;"></div>
+        <div class="actions-row">
+          <button type="button" class="secondary" id="downloadBoletaPdfBtn">Descargar PDF</button>
+          <button class="secondary" onclick="window.print()">Imprimir</button>
+          <button class="secondary" type="button" id="closeBoleta">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="tab-panel" id="tab-reporte">
     <div class="panel">
       <div class="run-header">
@@ -529,6 +596,7 @@
         <button type="button" class="secondary" id="enviarTodasBtn" style="display:none;">Enviar todas por correo</button>
       </div>
       <div class="note" id="reportMissingNote" style="display:none;"></div>
+      <div class="hint" id="reportCreadoNote" style="display:none; margin:6px 0 0;"></div>
 
       <div style="overflow-x:auto;">
         <table class="calc" id="reportResultTable" style="display:none;">
@@ -553,14 +621,25 @@
       <div class="run-header">
         <div>
           <h2>Historial de planillas</h2>
-          <p class="hint">Colillas y reportes generados anteriormente. Filtra por período para encontrar uno rápido.</p>
+          <p class="hint">Colillas, boletas de vacaciones y reportes generados anteriormente. Filtra por tipo, colaborador o período para encontrar uno rápido.</p>
         </div>
       </div>
-      <div class="field" style="margin-bottom:6px;">
-        <label for="historyEmpSelect">Colaborador</label>
-        <select id="historyEmpSelect">
-          <option value="">— Todos los colaboradores —</option>
-        </select>
+      <div class="field-row" style="margin-bottom:6px;">
+        <div class="field">
+          <label for="historyTipoSelect">Tipo</label>
+          <select id="historyTipoSelect">
+            <option value="">— Todos —</option>
+            <option value="colilla">Colillas de pago</option>
+            <option value="reporte">Reportes generales</option>
+            <option value="boleta">Boletas de vacaciones</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="historyEmpSelect">Colaborador</label>
+          <select id="historyEmpSelect">
+            <option value="">— Todos los colaboradores —</option>
+          </select>
+        </div>
       </div>
       <div class="field-row" style="margin-bottom:6px;">
         <div class="field">
@@ -786,7 +865,7 @@
   });
 
   async function iniciarSesionApp() {
-    document.getElementById('usuarioBadge').textContent = session.usuario || 'Usuario';
+    document.getElementById('usuarioBadge').textContent = (session.usuario && session.usuario.usuario) || 'Usuario';
     ocultarGate();
     await Promise.all([cargarEmpleados(), cargarAdminConfig(), cargarUsuarios()]);
     renderEmployees();
@@ -960,6 +1039,7 @@
       emptyNote.style.display = 'block';
       renderColillaEmpSelect();
       renderHistoryEmpSelect();
+      renderBoletaEmpSelect();
       return;
     }
     emptyNote.style.display = 'none';
@@ -979,6 +1059,7 @@
     });
     renderColillaEmpSelect();
     renderHistoryEmpSelect();
+    renderBoletaEmpSelect();
   }
 
   function renderColillaEmpSelect() {
@@ -995,6 +1076,15 @@
     if (!select) return;
     const current = select.value;
     select.innerHTML = '<option value="">— Todos los colaboradores —</option>' +
+      employees.map(emp => `<option value="${emp.id}">${escapeHtml(emp.nombre)}</option>`).join('');
+    if (employees.some(e => String(e.id) === String(current))) select.value = current;
+  }
+
+  function renderBoletaEmpSelect() {
+    const select = document.getElementById('boletaEmpSelect');
+    if (!select) return;
+    const current = select.value;
+    select.innerHTML = '<option value="">— Selecciona un colaborador —</option>' +
       employees.map(emp => `<option value="${emp.id}">${escapeHtml(emp.nombre)}</option>`).join('');
     if (employees.some(e => String(e.id) === String(current))) select.value = current;
   }
@@ -1432,13 +1522,13 @@
     document.getElementById('colillaBox').style.display = 'none';
   });
 
-  function generarPdfColilla() {
-    const element = document.getElementById('colillaBox');
+  function generarPdfDeElemento(elementId) {
+    const element = document.getElementById(elementId);
     return html2canvas(element, {
       backgroundColor: '#ffffff',
       scale: 2,
       onclone: (clonedDoc) => {
-        const actions = clonedDoc.getElementById('colillaBox').querySelector('.actions-row');
+        const actions = clonedDoc.getElementById(elementId).querySelector('.actions-row');
         if (actions) actions.style.display = 'none';
       }
     }).then(canvas => {
@@ -1452,6 +1542,10 @@
       pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
       return pdf;
     });
+  }
+
+  function generarPdfColilla() {
+    return generarPdfDeElemento('colillaBox');
   }
 
   document.getElementById('downloadPdfBtn').addEventListener('click', () => {
@@ -1473,18 +1567,32 @@
 
   function construirTextoCorreo(ctx) {
     const empresa = adminConfig.nombreEmpresa || 'la empresa';
-    const asunto = 'Colilla de pago - ' + empresa + ' - Período ' + (ctx.periodStart || '') + ' a ' + (ctx.periodEnd || '');
+    const rango = (ctx.periodStart || '—') + ' al ' + (ctx.periodEnd || '—');
+    const asunto = 'Colilla de pago - ' + empresa + ' - ' + rango;
     const cuerpo =
       'Estimado(a) ' + ctx.empNombre + ',\n\n' +
-      'Adjunto encontrará su colilla de pago correspondiente al período del ' + (ctx.periodStart || '—') + ' al ' + (ctx.periodEnd || '—') + '.\n\n' +
-      'Resumen:\n' +
+      'Por medio de la presente le remitimos su colilla de pago correspondiente al período comprendido entre el ' +
+      (ctx.periodStart || '—') + ' y el ' + (ctx.periodEnd || '—') + '.\n\n' +
+      'Resumen del período:\n' +
       '- Salario bruto quincenal: ₡' + formatNumber(ctx.brutoQuincenal) + '\n' +
       '- Deducción CCSS: ₡' + formatNumber(ctx.ccss) + '\n' +
       '- Deducción de renta: ₡' + formatNumber(ctx.renta) + '\n' +
       '- Neto a pagar: ₡' + formatNumber(ctx.neto) + '\n\n' +
-      'Por favor confirme la recepción de este correo.\n\n' +
-      'Saludos,\n' + empresa;
+      'IMPORTANTE: por motivos de seguridad del navegador, este mensaje no puede adjuntar el archivo de forma automática. ' +
+      'Su colilla en PDF ("' + colillaFilenameBase + '.pdf") se descargó en este momento a su equipo: por favor adjúntela ' +
+      'a este correo antes de enviarlo.\n\n' +
+      'Ante cualquier consulta relacionada con este pago, quedamos a su disposición.\n\n' +
+      'Atentamente,\n' + empresa + '\nDepartamento Administrativo';
     return { asunto, cuerpo };
+  }
+
+  // Se usa un enlace de "redactar" de Gmail (en vez de mailto:) para que el mensaje
+  // se abra en una pestaña nueva usando la cuenta de correo con la que ya se tenga
+  // sesión iniciada en el navegador (la cuenta administrativa), en lugar de depender
+  // de que el equipo tenga configurado un programa de correo por defecto.
+  function construirEnlaceRedaccionCorreo(destinatario, asunto, cuerpo) {
+    const params = new URLSearchParams({ view: 'cm', fs: '1', to: destinatario, su: asunto, body: cuerpo });
+    return 'https://mail.google.com/mail/?' + params.toString();
   }
 
   document.getElementById('sendEmailBtn').addEventListener('click', () => {
@@ -1499,6 +1607,10 @@
       return;
     }
 
+    // Se abre la pestaña emergente de inmediato (de forma sincrónica con el clic)
+    // para que el navegador no la bloquee; su contenido se llena cuando el PDF esté listo.
+    const ventana = window.open('', '_blank');
+
     const btn = document.getElementById('sendEmailBtn');
     btn.disabled = true;
     const originalText = btn.textContent;
@@ -1507,10 +1619,12 @@
     generarPdfColilla().then(pdf => {
       pdf.save(colillaFilenameBase + '.pdf');
       const { asunto, cuerpo } = construirTextoCorreo(colillaContext);
-      const mailto = 'mailto:' + encodeURIComponent(colillaContext.empCorreo) +
-        '?subject=' + encodeURIComponent(asunto) +
-        '&body=' + encodeURIComponent(cuerpo + '\n\n(Recuerda adjuntar el PDF que se acaba de descargar: ' + colillaFilenameBase + '.pdf)');
-      window.location.href = mailto;
+      const url = construirEnlaceRedaccionCorreo(colillaContext.empCorreo, asunto, cuerpo);
+      if (ventana) {
+        ventana.location.href = url;
+      } else {
+        alert('El navegador bloqueó la pestaña emergente del correo. Permite ventanas emergentes para este sitio e intenta de nuevo.');
+      }
     }).catch(err => {
       console.error('No se pudo preparar el correo', err);
       alert('No se pudo generar el PDF para el correo. Intenta de nuevo.');
@@ -1530,15 +1644,17 @@
 
   async function cargarHistorialDesdeAPI() {
     try {
-      const [colillas, reportes] = await Promise.all([
+      const [colillas, reportes, boletas] = await Promise.all([
         apiFetch('/api/colillas'),
-        apiFetch('/api/reportes')
+        apiFetch('/api/reportes'),
+        apiFetch('/api/boletas')
       ]);
       const entradasColillas = colillas.map(c => ({
         tipo: 'colilla',
         id: c.id,
         periodStart: soloFecha(c.periodo_inicio), periodEnd: soloFecha(c.periodo_fin),
         empId: c.empleado_id, empNombre: c.empleado_nombre,
+        creadoPor: c.creado_por || '',
         timestamp: c.creado_en,
         ...c.datos
       }));
@@ -1546,12 +1662,24 @@
         tipo: 'reporte',
         id: r.id,
         periodStart: soloFecha(r.periodo_inicio), periodEnd: soloFecha(r.periodo_fin),
+        creadoPor: r.creado_por || '',
         timestamp: r.creado_en,
         rows: (r.datos.filas || []).map(f => ({ ...f, empId: f.empleadoId, periodStart: soloFecha(r.periodo_inicio), periodEnd: soloFecha(r.periodo_fin) })),
         totBruto: r.datos.totales.totBruto, totCcss: r.datos.totales.totCcss,
         totRenta: r.datos.totales.totRenta, totNeto: r.datos.totales.totNeto
       }));
-      historyEntries = entradasColillas.concat(entradasReportes)
+      const entradasBoletas = boletas.map(b => ({
+        tipo: 'boleta',
+        id: b.id,
+        periodStart: soloFecha(b.periodo_inicio), periodEnd: soloFecha(b.periodo_fin),
+        empId: b.empleado_id, empNombre: b.empleado_nombre, empCorreo: b.empleado_correo,
+        diasDisfrutar: Number(b.dias_disfrutar),
+        fechaGeneracion: soloFecha(b.fecha_generacion),
+        creadoPor: b.creado_por || '',
+        actualizadoPor: b.actualizado_por || '',
+        timestamp: b.actualizado_en || b.creado_en
+      }));
+      historyEntries = entradasColillas.concat(entradasReportes).concat(entradasBoletas)
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     } catch (err) {
       console.error('No se pudo cargar el historial', err);
@@ -1560,7 +1688,11 @@
     renderHistorial();
   }
 
-  function renderHistorial(filterStart, filterEnd, filterEmpId) {
+  function metaConAutor(textoBase, entry) {
+    return entry.creadoPor ? (textoBase + ' · por ' + escapeHtml(entry.creadoPor)) : textoBase;
+  }
+
+  function renderHistorial(filterStart, filterEnd, filterEmpId, filterTipo) {
     const list = document.getElementById('historyList');
     const emptyNote = document.getElementById('historyEmptyNote');
     list.innerHTML = '';
@@ -1568,17 +1700,18 @@
     let items = historyEntries;
     if (filterStart) items = items.filter(it => !it.periodEnd || it.periodEnd >= filterStart);
     if (filterEnd) items = items.filter(it => !it.periodStart || it.periodStart <= filterEnd);
+    if (filterTipo) items = items.filter(it => it.tipo === filterTipo);
     if (filterEmpId) {
-      items = items.filter(it => it.tipo === 'colilla'
-        ? String(it.empId) === String(filterEmpId)
-        : it.rows.some(r => String(r.empId) === String(filterEmpId)));
+      items = items.filter(it => it.tipo === 'reporte'
+        ? it.rows.some(r => String(r.empId) === String(filterEmpId))
+        : String(it.empId) === String(filterEmpId));
     }
 
     if (items.length === 0) {
       emptyNote.style.display = 'block';
       emptyNote.textContent = (filterEmpId && (filterStart || filterEnd))
-        ? 'No hay ninguna colilla ni reporte generado para ese colaborador en el rango de fecha seleccionado.'
-        : 'Aún no hay colillas ni reportes guardados.';
+        ? 'No hay ninguna colilla, boleta ni reporte generado para ese colaborador en el rango de fecha seleccionado.'
+        : 'Aún no hay colillas, boletas ni reportes guardados.';
       if (filterEmpId && (filterStart || filterEnd)) {
         alert('No hay ningún reporte generado para el rango de fecha seleccionado.');
       }
@@ -1606,8 +1739,12 @@
       const header = document.createElement('li');
       header.className = 'history-period-header';
       const numColillas = grupo.entries.filter(e => e.tipo === 'colilla').length;
+      const numBoletas = grupo.entries.filter(e => e.tipo === 'boleta').length;
       const tieneReporte = grupo.entries.some(e => e.tipo === 'reporte');
-      header.innerHTML = `Período: ${grupo.periodStart || '—'} a ${grupo.periodEnd || '—'} · ${numColillas} colilla(s)${tieneReporte ? ' · reporte generado' : ''}`;
+      header.innerHTML = `Período: ${grupo.periodStart || '—'} a ${grupo.periodEnd || '—'}` +
+        (numColillas ? ` · ${numColillas} colilla(s)` : '') +
+        (numBoletas ? ` · ${numBoletas} boleta(s) de vacaciones` : '') +
+        (tieneReporte ? ' · reporte generado' : '');
       list.appendChild(header);
 
       grupo.entries.forEach(entry => {
@@ -1617,17 +1754,27 @@
           li.innerHTML = `
             <div style="flex:1;">
               <div class="h-main">${escapeHtml(entry.empNombre)}</div>
-              <div class="h-meta">Neto ₡${formatNumber(entry.neto)} · ${formatFecha(entry.timestamp)}</div>
+              <div class="h-meta">${metaConAutor('Neto ₡' + formatNumber(entry.neto) + ' · ' + formatFecha(entry.timestamp), entry)}</div>
             </div>
             <button class="del" onclick="event.stopPropagation(); editarColillaId('${entry.id}')" title="Editar colilla" aria-label="Editar colilla" style="color: var(--ink);">✎</button>
             <span class="h-tag">Colilla</span>
           `;
           li.addEventListener('click', () => verColillaHistorial(entry));
+        } else if (entry.tipo === 'boleta') {
+          li.innerHTML = `
+            <div style="flex:1;">
+              <div class="h-main">${escapeHtml(entry.empNombre)}</div>
+              <div class="h-meta">${metaConAutor(entry.diasDisfrutar + ' día(s) de vacaciones · ' + formatFecha(entry.timestamp), entry)}</div>
+            </div>
+            <button class="del" onclick="event.stopPropagation(); editarBoletaId('${entry.id}')" title="Editar boleta" aria-label="Editar boleta" style="color: var(--ink);">✎</button>
+            <span class="h-tag">Boleta vacaciones</span>
+          `;
+          li.addEventListener('click', () => verBoletaHistorial(entry));
         } else {
           li.innerHTML = `
             <div>
               <div class="h-main">Reporte completo</div>
-              <div class="h-meta">${entry.rows.length} colaborador(es) · Neto total ₡${formatNumber(entry.totNeto)} · ${formatFecha(entry.timestamp)}</div>
+              <div class="h-meta">${metaConAutor(entry.rows.length + ' colaborador(es) · Neto total ₡' + formatNumber(entry.totNeto) + ' · ' + formatFecha(entry.timestamp), entry)}</div>
             </div>
             <span class="h-tag">Reporte</span>
           `;
@@ -1742,6 +1889,7 @@
     document.getElementById('reportStart').value = entry.periodStart || '';
     document.getElementById('reportEnd').value = entry.periodEnd || '';
     renderReportResults(entry.rows, false);
+    mostrarCreadoNote(entry.timestamp, entry.creadoPor);
     switchTab('reporte');
     document.getElementById('reportResultTable').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -1750,17 +1898,26 @@
     renderHistorial(
       document.getElementById('historyStart').value,
       document.getElementById('historyEnd').value,
-      document.getElementById('historyEmpSelect').value
+      document.getElementById('historyEmpSelect').value,
+      document.getElementById('historyTipoSelect').value
     );
   });
   document.getElementById('historyClearBtn').addEventListener('click', () => {
     document.getElementById('historyStart').value = '';
     document.getElementById('historyEnd').value = '';
     document.getElementById('historyEmpSelect').value = '';
+    document.getElementById('historyTipoSelect').value = '';
     renderHistorial();
   });
 
   // ============ Reporte general ============
+
+  function mostrarCreadoNote(creadoEn, creadoPor) {
+    const nota = document.getElementById('reportCreadoNote');
+    if (!creadoEn) { nota.style.display = 'none'; return; }
+    nota.textContent = 'Generado el ' + formatFecha(creadoEn) + (creadoPor ? ' por ' + creadoPor : '');
+    nota.style.display = 'block';
+  }
 
   function renderReportResults(rows) {
     const body = document.getElementById('reportResultBody');
@@ -1816,10 +1973,12 @@
       const rows = (datos.filas || []).map(f => ({ ...f, empId: f.empleadoId, periodStart, periodEnd }));
       lastReportRows = rows;
       renderReportResults(rows);
+      mostrarCreadoNote(guardado.creado_en, guardado.creado_por);
       await cargarHistorialDesdeAPI();
     } catch (err) {
       document.getElementById('reportResultTable').style.display = 'none';
       document.getElementById('exportarExcelBtn').style.display = 'none';
+      document.getElementById('reportCreadoNote').style.display = 'none';
       let msg = err.message || 'No hay ninguna colilla generada todavía para ese período exacto.';
       if (err.data && err.data.faltantes && err.data.faltantes.length) {
         msg += '\nFaltan: ' + err.data.faltantes.join(', ') + '.';
@@ -1883,7 +2042,7 @@
     const conCorreo = [];
     const sinCorreo = [];
     lastReportRows.forEach(r => {
-      const emp = employees.find(e => e.id === r.empId);
+      const emp = employees.find(e => String(e.id) === String(r.empId));
       if (emp && emp.correo) conCorreo.push({ row: r, emp });
       else sinCorreo.push(r.nombre);
     });
@@ -1892,6 +2051,16 @@
       alert('Ninguno de los colaboradores del reporte tiene correo registrado.');
       return;
     }
+
+    if (!confirm('Se abrirá una pestaña de correo por cada uno de los ' + conCorreo.length + ' colaborador(es) con correo registrado, y se descargará su PDF correspondiente. Asegúrate de permitir ventanas emergentes para este sitio.\n\n¿Continuar?')) {
+      return;
+    }
+
+    // Se abren TODAS las pestañas de una sola vez, de forma sincrónica con el clic,
+    // para que el navegador no las bloquee por no considerarlas originadas por el
+    // usuario (esto sí puede pasar si se abren una por una dentro del ciclo async).
+    const ventanas = conCorreo.map(() => window.open('', '_blank'));
+    const algunaBloqueada = ventanas.some(v => !v);
 
     const btn = document.getElementById('enviarTodasBtn');
     btn.disabled = true;
@@ -1903,7 +2072,7 @@
 
     for (let i = 0; i < conCorreo.length; i++) {
       const { row, emp } = conCorreo[i];
-      btn.textContent = 'Enviando ' + (i + 1) + '/' + conCorreo.length + '...';
+      btn.textContent = 'Preparando ' + (i + 1) + '/' + conCorreo.length + '...';
 
       const datosLineas = {
         horasExtra: row.horasExtra || 0, horasSinGoce: row.horasSinGoce || 0, diasVacaciones: row.diasVacaciones || 0,
@@ -1936,28 +2105,211 @@
         const pdf = await generarPdfColilla();
         pdf.save(colillaFilenameBase + '.pdf');
         const { asunto, cuerpo } = construirTextoCorreo(colillaContext);
-        const mailto = 'mailto:' + encodeURIComponent(colillaContext.empCorreo) +
-          '?subject=' + encodeURIComponent(asunto) +
-          '&body=' + encodeURIComponent(cuerpo + '\n\n(Recuerda adjuntar el PDF que se acaba de descargar: ' + colillaFilenameBase + '.pdf)');
-        window.location.href = mailto;
+        const url = construirEnlaceRedaccionCorreo(colillaContext.empCorreo, asunto, cuerpo);
+        if (ventanas[i]) ventanas[i].location.href = url;
       } catch (err) {
         console.error('Error enviando colilla de ' + row.nombre, err);
       }
 
-      // pequeña pausa para que el navegador procese cada correo antes de continuar
-      await new Promise(res => setTimeout(res, 900));
+      // pequeña pausa para que el navegador procese cada descarga antes de continuar
+      await new Promise(res => setTimeout(res, 700));
     }
 
     btn.disabled = false;
     btn.textContent = originalText;
     switchTab('reporte');
 
-    let resumen = 'Se prepararon ' + conCorreo.length + ' colilla(s) para envío (PDF descargado y correo abierto para cada una).';
+    let resumen = 'Se prepararon ' + conCorreo.length + ' colilla(s) para envío (PDF descargado y pestaña de correo abierta para cada una).';
+    if (algunaBloqueada) resumen += ' El navegador pudo haber bloqueado alguna pestaña emergente: revisa el bloqueador de ventanas emergentes y permite este sitio si faltó alguna.';
     if (sinCorreo.length > 0) resumen += ' Sin correo registrado (omitidos): ' + sinCorreo.join(', ') + '.';
     alert(resumen);
   }
 
   document.getElementById('enviarTodasBtn').addEventListener('click', enviarTodasLasColillas);
+
+  // ============ Boletas de vacaciones ============
+
+  let editingBoletaId = null;
+  let boletaFilenameBase = 'boleta_vacaciones';
+
+  function formatFechaCorta(iso) {
+    if (!iso) return '—';
+    const [y, m, d] = String(iso).split('-');
+    return d + '/' + m + '/' + y;
+  }
+
+  document.getElementById('boletaEmpSelect').addEventListener('change', (e) => {
+    const emp = employees.find(x => String(x.id) === String(e.target.value));
+    const form = document.getElementById('boletaForm');
+    const hint = document.getElementById('boletaFormHint');
+    if (!emp) {
+      form.style.display = 'none';
+      hint.textContent = 'Selecciona un colaborador para ver sus días disponibles.';
+      return;
+    }
+    editingBoletaId = null;
+    document.getElementById('boletaFormTitle').textContent = 'Generar boleta de vacaciones';
+    document.getElementById('boletaFormSubmitBtn').textContent = 'Generar boleta';
+    document.getElementById('boletaFormCancelBtn').style.display = 'none';
+    hint.textContent = 'Colaborador: ' + emp.nombre;
+    document.getElementById('boletaDiasDisponiblesNote').textContent =
+      'Días de vacaciones disponibles: ' + emp.vacacionesDisponibles + ' día(s).';
+    const diasInput = document.getElementById('boletaDias');
+    diasInput.max = emp.vacacionesDisponibles;
+    diasInput.value = '';
+    document.getElementById('boletaInicio').value = '';
+    document.getElementById('boletaFin').value = '';
+    document.getElementById('boletaFormError').style.display = 'none';
+    form.style.display = 'flex';
+    document.getElementById('boletaBox').style.display = 'none';
+  });
+
+  document.getElementById('boletaForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const empId = document.getElementById('boletaEmpSelect').value;
+    const emp = employees.find(x => String(x.id) === String(empId));
+    if (!emp) return;
+
+    const diasDisfrutar = parseFloat(document.getElementById('boletaDias').value) || 0;
+    const periodoInicio = document.getElementById('boletaInicio').value;
+    const periodoFin = document.getElementById('boletaFin').value;
+    const errorBox = document.getElementById('boletaFormError');
+    errorBox.style.display = 'none';
+
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const inicioDate = periodoInicio ? new Date(periodoInicio + 'T00:00:00') : null;
+
+    if (!periodoInicio || !periodoFin) {
+      errorBox.textContent = 'Indica el rango de fechas en que se disfrutarán los días.';
+      errorBox.style.display = 'block';
+      return;
+    }
+    if (periodoFin < periodoInicio) {
+      errorBox.textContent = 'El rango de fechas no es válido.';
+      errorBox.style.display = 'block';
+      return;
+    }
+    if (inicioDate < hoy) {
+      errorBox.textContent = 'El rango de fechas a disfrutar no puede ser anterior a la fecha actual.';
+      errorBox.style.display = 'block';
+      return;
+    }
+    if (!diasDisfrutar || diasDisfrutar <= 0) {
+      errorBox.textContent = 'Indica la cantidad de días a disfrutar.';
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    const btn = document.getElementById('boletaFormSubmitBtn');
+    btn.disabled = true;
+    try {
+      const body = { empleadoId: emp.id, diasDisfrutar, periodoInicio, periodoFin };
+      const boleta = editingBoletaId
+        ? await apiFetch('/api/boletas/' + editingBoletaId, { method: 'PUT', body })
+        : await apiFetch('/api/boletas/generar', { method: 'POST', body });
+
+      mostrarBoleta(boleta);
+      await cargarHistorialDesdeAPI();
+      editingBoletaId = null;
+      document.getElementById('boletaFormCancelBtn').style.display = 'none';
+      document.getElementById('boletaFormTitle').textContent = 'Generar boleta de vacaciones';
+      document.getElementById('boletaFormSubmitBtn').textContent = 'Generar boleta';
+    } catch (err) {
+      errorBox.textContent = err.message || 'No se pudo generar la boleta.';
+      errorBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('boletaFormCancelBtn').addEventListener('click', () => {
+    editingBoletaId = null;
+    document.getElementById('boletaForm').reset();
+    document.getElementById('boletaFormCancelBtn').style.display = 'none';
+    document.getElementById('boletaFormTitle').textContent = 'Generar boleta de vacaciones';
+    document.getElementById('boletaFormSubmitBtn').textContent = 'Generar boleta';
+    document.getElementById('boletaFormError').style.display = 'none';
+  });
+
+  function mostrarBoleta(boleta) {
+    const nombreEmpresa = adminConfig.nombreEmpresa || 'la empresa';
+    const nombre = boleta.empleado_nombre || boleta.empNombre;
+    const correo = boleta.empleado_correo || boleta.empCorreo || '—';
+    const dias = Number(boleta.dias_disfrutar != null ? boleta.dias_disfrutar : boleta.diasDisfrutar);
+    const inicio = soloFecha(boleta.periodo_inicio || boleta.periodStart);
+    const fin = soloFecha(boleta.periodo_fin || boleta.periodFin);
+    const fechaGeneracion = soloFecha(boleta.fecha_generacion || boleta.fechaGeneracion) || new Date().toISOString().slice(0, 10);
+
+    boletaFilenameBase = 'boleta_vacaciones_' + String(nombre).replace(/\s+/g, '_') + '_' + (inicio || 'inicio') + '_' + (fin || 'fin');
+
+    document.getElementById('boletaMeta').textContent = nombreEmpresa + ' · Generada el ' + formatFechaCorta(fechaGeneracion);
+    document.getElementById('boletaTexto').textContent =
+      'Por medio de la presente, ' + nombreEmpresa + ' hace constar que:\n\n' +
+      'Colaborador(a): ' + nombre + '\n' +
+      'Correo: ' + correo + '\n' +
+      'Días de vacaciones a disfrutar: ' + dias + ' día(s)\n' +
+      'Período a disfrutar: del ' + formatFechaCorta(inicio) + ' al ' + formatFechaCorta(fin) + '\n' +
+      'Fecha de generación de esta boleta: ' + formatFechaCorta(fechaGeneracion) + '\n\n' +
+      'Esta boleta certifica la autorización del disfrute de vacaciones indicado arriba, conforme a la legislación laboral de Costa Rica.';
+
+    document.getElementById('boletaBox').style.display = 'block';
+    document.getElementById('boletaBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  document.getElementById('downloadBoletaPdfBtn').addEventListener('click', () => {
+    const btn = document.getElementById('downloadBoletaPdfBtn');
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = 'Generando...';
+    generarPdfDeElemento('boletaBox').then(pdf => {
+      pdf.save(boletaFilenameBase + '.pdf');
+    }).catch(err => {
+      console.error('No se pudo generar el PDF de la boleta', err);
+      alert('No se pudo generar el PDF. Intenta de nuevo.');
+    }).finally(() => {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    });
+  });
+
+  document.getElementById('closeBoleta').addEventListener('click', () => {
+    document.getElementById('boletaBox').style.display = 'none';
+  });
+
+  function verBoletaHistorial(entry) {
+    switchTab('boletas');
+    mostrarBoleta(entry);
+  }
+
+  function editarBoletaId(id) {
+    const entry = historyEntries.find(e => e.tipo === 'boleta' && String(e.id) === String(id));
+    if (!entry) return;
+    const emp = employees.find(x => String(x.id) === String(entry.empId));
+    if (!emp) {
+      alert('El colaborador de esta boleta ya no existe entre los colaboradores activos.');
+      return;
+    }
+    switchTab('boletas');
+    document.getElementById('boletaEmpSelect').value = emp.id;
+    document.getElementById('boletaFormHint').textContent = 'Colaborador: ' + emp.nombre;
+    document.getElementById('boletaDiasDisponiblesNote').textContent =
+      'Días de vacaciones disponibles: ' + emp.vacacionesDisponibles + ' día(s). Esta boleta es un documento informativo/de autorización y no descuenta el saldo por sí sola; el descuento real ocurre al generar la colilla de pago con esos días de vacaciones.';
+
+    const diasInput = document.getElementById('boletaDias');
+    diasInput.max = Math.max(Number(emp.vacacionesDisponibles) || 0, Number(entry.diasDisfrutar) || 0);
+    diasInput.value = entry.diasDisfrutar;
+    document.getElementById('boletaInicio').value = entry.periodStart || '';
+    document.getElementById('boletaFin').value = entry.periodEnd || '';
+    document.getElementById('boletaFormError').style.display = 'none';
+
+    editingBoletaId = entry.id;
+    document.getElementById('boletaFormTitle').textContent = 'Editando boleta de ' + emp.nombre;
+    document.getElementById('boletaFormSubmitBtn').textContent = 'Guardar cambios';
+    document.getElementById('boletaFormCancelBtn').style.display = 'inline-block';
+    document.getElementById('boletaForm').style.display = 'flex';
+    document.getElementById('boletaBox').style.display = 'none';
+    document.getElementById('boletaForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   // ============ Admin: datos de la empresa ============
 
