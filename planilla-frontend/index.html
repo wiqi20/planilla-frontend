@@ -533,8 +533,8 @@
         <form class="stack" id="boletaForm" style="display:none;">
           <div class="note" id="boletaDiasDisponiblesNote"></div>
           <div class="field">
-            <label for="boletaDias">Cantidad de días a disfrutar</label>
-            <input type="number" id="boletaDias" min="0.5" step="0.5" required>
+            <label for="boletaDias">Cantidad de días a disfrutar (días completos)</label>
+            <input type="number" id="boletaDias" min="1" step="1" required>
           </div>
           <div class="field-row">
             <div class="field">
@@ -546,6 +546,7 @@
               <input type="date" id="boletaFin" required>
             </div>
           </div>
+          <div class="note" id="boletaRangoNote" style="margin-top:-6px;">Solo se pueden elegir días laborales (lunes a sábado), y el rango no puede tener más días laborales que la cantidad indicada arriba.</div>
           <div class="note" id="boletaFormError" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink);"></div>
           <div class="actions-row" style="margin-top:0;">
             <button type="submit" id="boletaFormSubmitBtn">Generar boleta</button>
@@ -562,6 +563,26 @@
           </div>
         </div>
         <div id="boletaTexto" style="white-space:pre-line; line-height:1.7;"></div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:26px;">
+          <div style="text-align:center;">
+            <div style="border-top:1px solid var(--ink); padding-top:6px; margin-top:36px;">Firma del colaborador</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="border-top:1px solid var(--ink); padding-top:6px; margin-top:36px;">Firma del administrador</div>
+          </div>
+        </div>
+
+        <div class="actions-row" id="boletaFirmaRow" style="display:none;">
+          <label for="boletaFirmaInput" style="align-self:center; font-size:13px; color:var(--ink-soft);">Adjuntar boleta firmada (foto o escaneo):</label>
+          <input type="file" id="boletaFirmaInput" accept="image/png, image/jpeg, image/webp" style="max-width:260px;">
+        </div>
+        <div class="note" id="boletaFirmaStatus" style="display:none;"></div>
+        <div id="boletaFirmaPreviewWrap" style="display:none; margin-top:10px;">
+          <div class="hint" style="margin-bottom:6px;">Comprobante de firma adjunto:</div>
+          <img id="boletaFirmaPreview" alt="Boleta firmada" style="max-width:100%; max-height:420px; border:1px solid var(--ink); border-radius:10px;">
+        </div>
+
         <div class="actions-row">
           <button type="button" class="secondary" id="downloadBoletaPdfBtn">Descargar PDF</button>
           <button class="secondary" onclick="window.print()">Imprimir</button>
@@ -1578,9 +1599,6 @@
       '- Deducción CCSS: ₡' + formatNumber(ctx.ccss) + '\n' +
       '- Deducción de renta: ₡' + formatNumber(ctx.renta) + '\n' +
       '- Neto a pagar: ₡' + formatNumber(ctx.neto) + '\n\n' +
-      'IMPORTANTE: por motivos de seguridad del navegador, este mensaje no puede adjuntar el archivo de forma automática. ' +
-      'Su colilla en PDF ("' + colillaFilenameBase + '.pdf") se descargó en este momento a su equipo: por favor adjúntela ' +
-      'a este correo antes de enviarlo.\n\n' +
       'Ante cualquier consulta relacionada con este pago, quedamos a su disposición.\n\n' +
       'Atentamente,\n' + empresa + '\nDepartamento Administrativo';
     return { asunto, cuerpo };
@@ -1622,6 +1640,7 @@
       const url = construirEnlaceRedaccionCorreo(colillaContext.empCorreo, asunto, cuerpo);
       if (ventana) {
         ventana.location.href = url;
+        alert('Recuerda adjuntar la colilla de pago correspondiente ("' + colillaFilenameBase + '.pdf", descargada en este momento) antes de enviar el correo.');
       } else {
         alert('El navegador bloqueó la pestaña emergente del correo. Permite ventanas emergentes para este sitio e intenta de nuevo.');
       }
@@ -1677,6 +1696,7 @@
         fechaGeneracion: soloFecha(b.fecha_generacion),
         creadoPor: b.creado_por || '',
         actualizadoPor: b.actualizado_por || '',
+        tieneFirma: !!b.tiene_firma,
         timestamp: b.actualizado_en || b.creado_en
       }));
       historyEntries = entradasColillas.concat(entradasReportes).concat(entradasBoletas)
@@ -2119,7 +2139,7 @@
     btn.textContent = originalText;
     switchTab('reporte');
 
-    let resumen = 'Se prepararon ' + conCorreo.length + ' colilla(s) para envío (PDF descargado y pestaña de correo abierta para cada una).';
+    let resumen = 'Se prepararon ' + conCorreo.length + ' colilla(s) para envío (PDF descargado y pestaña de correo abierta para cada una). Recuerda adjuntar el PDF correspondiente a cada correo antes de enviarlo.';
     if (algunaBloqueada) resumen += ' El navegador pudo haber bloqueado alguna pestaña emergente: revisa el bloqueador de ventanas emergentes y permite este sitio si faltó alguna.';
     if (sinCorreo.length > 0) resumen += ' Sin correo registrado (omitidos): ' + sinCorreo.join(', ') + '.';
     alert(resumen);
@@ -2131,6 +2151,23 @@
 
   let editingBoletaId = null;
   let boletaFilenameBase = 'boleta_vacaciones';
+
+  // domingo = 0 en JS Date; lunes a sábado son días laborales para este calendario
+  // (debe coincidir exactamente con la validación del backend en boletas.routes.js).
+  function boletaEsDomingo(fechaISO) {
+    return new Date(fechaISO + 'T00:00:00').getDay() === 0;
+  }
+
+  function boletaContarDiasLaborables(inicioISO, finISO) {
+    let cuenta = 0;
+    const actual = new Date(inicioISO + 'T00:00:00');
+    const fin = new Date(finISO + 'T00:00:00');
+    while (actual <= fin) {
+      if (actual.getDay() !== 0) cuenta++;
+      actual.setDate(actual.getDate() + 1);
+    }
+    return cuenta;
+  }
 
   function formatFechaCorta(iso) {
     if (!iso) return '—';
@@ -2153,7 +2190,7 @@
     document.getElementById('boletaFormCancelBtn').style.display = 'none';
     hint.textContent = 'Colaborador: ' + emp.nombre;
     document.getElementById('boletaDiasDisponiblesNote').textContent =
-      'Días de vacaciones disponibles: ' + emp.vacacionesDisponibles + ' día(s).';
+      'Días de vacaciones disponibles: ' + emp.vacacionesDisponibles + ' día(s). Al generar la boleta, estos días se descuentan automáticamente del saldo.';
     const diasInput = document.getElementById('boletaDias');
     diasInput.max = emp.vacacionesDisponibles;
     diasInput.value = '';
@@ -2162,6 +2199,9 @@
     document.getElementById('boletaFormError').style.display = 'none';
     form.style.display = 'flex';
     document.getElementById('boletaBox').style.display = 'none';
+    document.getElementById('boletaFirmaRow').style.display = 'none';
+    document.getElementById('boletaFirmaStatus').style.display = 'none';
+    document.getElementById('boletaFirmaPreviewWrap').style.display = 'none';
   });
 
   document.getElementById('boletaForm').addEventListener('submit', async (e) => {
@@ -2194,8 +2234,24 @@
       errorBox.style.display = 'block';
       return;
     }
+    if (boletaEsDomingo(periodoInicio) || boletaEsDomingo(periodoFin)) {
+      errorBox.textContent = 'El período a disfrutar solo puede iniciar y terminar en un día laboral (lunes a sábado).';
+      errorBox.style.display = 'block';
+      return;
+    }
     if (!diasDisfrutar || diasDisfrutar <= 0) {
       errorBox.textContent = 'Indica la cantidad de días a disfrutar.';
+      errorBox.style.display = 'block';
+      return;
+    }
+    if (!Number.isInteger(diasDisfrutar)) {
+      errorBox.textContent = 'La cantidad de días a disfrutar debe ser un número entero de días completos.';
+      errorBox.style.display = 'block';
+      return;
+    }
+    const diasLaborablesRango = boletaContarDiasLaborables(periodoInicio, periodoFin);
+    if (diasLaborablesRango > diasDisfrutar) {
+      errorBox.textContent = 'El rango de fechas seleccionado tiene ' + diasLaborablesRango + ' día(s) laborable(s) (lunes a sábado), lo cual excede los ' + diasDisfrutar + ' día(s) a disfrutar indicados.';
       errorBox.style.display = 'block';
       return;
     }
@@ -2231,6 +2287,9 @@
     document.getElementById('boletaFormError').style.display = 'none';
   });
 
+  let currentBoletaId = null;
+  const MAX_FIRMA_DIMENSION = 1400; // px, para comprimir la imagen antes de subirla
+
   function mostrarBoleta(boleta) {
     const nombreEmpresa = adminConfig.nombreEmpresa || 'la empresa';
     const nombre = boleta.empleado_nombre || boleta.empNombre;
@@ -2254,7 +2313,90 @@
 
     document.getElementById('boletaBox').style.display = 'block';
     document.getElementById('boletaBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // El comprobante de firma solo aplica a una boleta ya guardada (tiene id).
+    currentBoletaId = boleta.id || null;
+    const firmaRow = document.getElementById('boletaFirmaRow');
+    const firmaStatus = document.getElementById('boletaFirmaStatus');
+    const firmaPreviewWrap = document.getElementById('boletaFirmaPreviewWrap');
+    const firmaPreview = document.getElementById('boletaFirmaPreview');
+    document.getElementById('boletaFirmaInput').value = '';
+    firmaPreviewWrap.style.display = 'none';
+    firmaPreview.src = '';
+    firmaStatus.style.display = 'none';
+
+    if (currentBoletaId) {
+      firmaRow.style.display = 'flex';
+      const tieneFirma = boleta.tieneFirma || boleta.tiene_firma;
+      if (tieneFirma) {
+        firmaStatus.textContent = 'Cargando comprobante de firma...';
+        firmaStatus.style.display = 'block';
+        apiFetch('/api/boletas/' + currentBoletaId + '/firma').then(data => {
+          if (data.firmaImagen && currentBoletaId === boleta.id) {
+            firmaPreview.src = data.firmaImagen;
+            firmaPreviewWrap.style.display = 'block';
+            firmaStatus.style.display = 'none';
+          }
+        }).catch(err => {
+          console.error('No se pudo cargar el comprobante de firma', err);
+          firmaStatus.textContent = 'No se pudo cargar el comprobante de firma guardado.';
+        });
+      }
+    } else {
+      firmaRow.style.display = 'none';
+    }
   }
+
+  // Reduce el tamaño de la imagen (lado máximo MAX_FIRMA_DIMENSION px) antes de
+  // convertirla a base64, para no cargar el almacenamiento con fotos de cámara
+  // de varios MB cuando basta con una imagen legible del documento firmado.
+  function comprimirImagenAFirma(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('No se pudo procesar la imagen'));
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > MAX_FIRMA_DIMENSION || height > MAX_FIRMA_DIMENSION) {
+            const escala = MAX_FIRMA_DIMENSION / Math.max(width, height);
+            width = Math.round(width * escala);
+            height = Math.round(height * escala);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById('boletaFirmaInput').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file || !currentBoletaId) return;
+    const firmaStatus = document.getElementById('boletaFirmaStatus');
+    const firmaPreviewWrap = document.getElementById('boletaFirmaPreviewWrap');
+    const firmaPreview = document.getElementById('boletaFirmaPreview');
+    firmaStatus.style.display = 'block';
+    firmaStatus.textContent = 'Subiendo comprobante de firma...';
+    try {
+      const dataUrl = await comprimirImagenAFirma(file);
+      await apiFetch('/api/boletas/' + currentBoletaId + '/firma', { method: 'PUT', body: { firmaImagen: dataUrl } });
+      firmaPreview.src = dataUrl;
+      firmaPreviewWrap.style.display = 'block';
+      firmaStatus.textContent = 'Comprobante de firma guardado correctamente.';
+      setTimeout(() => { firmaStatus.style.display = 'none'; }, 3000);
+      await cargarHistorialDesdeAPI();
+    } catch (err) {
+      console.error('No se pudo subir el comprobante de firma', err);
+      firmaStatus.textContent = err.message || 'No se pudo subir el comprobante de firma.';
+    }
+  });
 
   document.getElementById('downloadBoletaPdfBtn').addEventListener('click', () => {
     const btn = document.getElementById('downloadBoletaPdfBtn');
@@ -2292,17 +2434,19 @@
     switchTab('boletas');
     document.getElementById('boletaEmpSelect').value = emp.id;
     document.getElementById('boletaFormHint').textContent = 'Colaborador: ' + emp.nombre;
+    const maxEfectivo = (Number(emp.vacacionesDisponibles) || 0) + (Number(entry.diasDisfrutar) || 0);
     document.getElementById('boletaDiasDisponiblesNote').textContent =
-      'Días de vacaciones disponibles: ' + emp.vacacionesDisponibles + ' día(s). Esta boleta es un documento informativo/de autorización y no descuenta el saldo por sí sola; el descuento real ocurre al generar la colilla de pago con esos días de vacaciones.';
+      'Días de vacaciones disponibles: ' + emp.vacacionesDisponibles + ' día(s) (esta boleta ya descontó ' + entry.diasDisfrutar + '; puedes usar hasta ' + maxEfectivo + ' día(s) al editarla).';
 
     const diasInput = document.getElementById('boletaDias');
-    diasInput.max = Math.max(Number(emp.vacacionesDisponibles) || 0, Number(entry.diasDisfrutar) || 0);
+    diasInput.max = maxEfectivo;
     diasInput.value = entry.diasDisfrutar;
     document.getElementById('boletaInicio').value = entry.periodStart || '';
     document.getElementById('boletaFin').value = entry.periodEnd || '';
     document.getElementById('boletaFormError').style.display = 'none';
 
     editingBoletaId = entry.id;
+    currentBoletaId = null;
     document.getElementById('boletaFormTitle').textContent = 'Editando boleta de ' + emp.nombre;
     document.getElementById('boletaFormSubmitBtn').textContent = 'Guardar cambios';
     document.getElementById('boletaFormCancelBtn').style.display = 'inline-block';
