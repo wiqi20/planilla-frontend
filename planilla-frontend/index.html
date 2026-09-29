@@ -23,12 +23,36 @@
     --paper: #FFF4EC;          /* Linen Cream — superficie base */
     --paper-raised: #F6E6D9;   /* Buttery Peach — tarjetas y superficies secundarias */
     --ink: #3C422E;            /* Olive Ink — texto y bordes primarios */
-    --ink-soft: color-mix(in srgb, #3C422E 60%, white); /* derivado: texto secundario */
+    --ink-soft: #8A8E82;       /* derivado: Olive Ink mezclado 60/40 con blanco, texto secundario */
     --line: #3C422E;           /* hairlines en Olive Ink, tal como pide la skill */
     --cta: #D1E030;            /* EVOO Yellow-Green — único CTA saturado por sección */
+    --cta-ink: #2A2E1F;        /* texto/ícono siempre oscuro sobre el CTA, en ambos temas */
+    --hover-bg: rgba(60, 66, 46, 0.08);   /* resalte sutil al pasar el mouse sobre filas */
+    --line-soft: rgba(60, 66, 46, 0.25);  /* líneas internas de tablas, más discretas */
+    --overlay: rgba(20, 18, 12, 0.55);    /* fondo oscurecido detrás del login */
     --font-serif: 'Cormorant Garamond', Georgia, serif;  /* sustituto de ITC Garamond Condensed */
     --font-sans: 'Lora', Georgia, serif;                  /* sustituto de GT Alpina Typewriter */
     --font-micro: 'Work Sans', ui-sans-serif, sans-serif; /* sustituto de Apercu (micro-etiquetas) */
+  }
+
+  /* ============================================================
+     Tema oscuro: mismos roles de color (paper / paper-raised / ink /
+     ink-soft / line), reasignados para que todo siga siendo legible
+     sobre fondos oscuros. Se activa agregando data-theme="dark" al
+     <html>, guardado en localStorage y aplicado antes del primer
+     pintado para evitar parpadeos.
+  ============================================================ */
+  html[data-theme="dark"] {
+    --paper: #1E1C16;          /* fondo base oscuro, cálido */
+    --paper-raised: #2A2820;   /* paneles y tarjetas, un tono más claro */
+    --ink: #EFE9DA;            /* texto principal, casi blanco cálido */
+    --ink-soft: #A8A28E;       /* texto secundario, gris cálido legible */
+    --line: #EFE9DA;           /* hairlines claros sobre fondo oscuro */
+    --cta: #D1E030;            /* el CTA se mantiene igual en ambos temas */
+    --cta-ink: #22251A;
+    --hover-bg: rgba(239, 233, 218, 0.08);
+    --line-soft: rgba(239, 233, 218, 0.2);
+    --overlay: rgba(0, 0, 0, 0.65);
   }
 
   * { box-sizing: border-box; }
@@ -121,7 +145,7 @@
     cursor: pointer;
     border-radius: 0;
   }
-  .emp-item:hover { background: color-mix(in srgb, var(--paper-raised) 60%, transparent); }
+  .emp-item:hover { background: var(--hover-bg); }
   .emp-item.active { background: var(--paper-raised); }
   .emp-item .name { font-weight: 700; font-size: 16px; }
   .emp-item .meta { font-size: 13px; color: var(--ink-soft); }
@@ -137,7 +161,7 @@
     display: flex; justify-content: space-between; align-items: center; gap: 10px;
     padding: 10px 8px; border-bottom: 1px solid var(--ink); cursor: pointer; border-radius: 0;
   }
-  .history-item:hover { background: color-mix(in srgb, var(--paper-raised) 60%, transparent); }
+  .history-item:hover { background: var(--hover-bg); }
   .history-item .h-main { font-size: 16px; font-weight: 700; }
   .history-item .h-meta { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
   .history-item .h-tag {
@@ -178,7 +202,7 @@
     border-radius: 10px;
     border: 1px solid var(--ink);
     background: var(--cta);
-    color: var(--ink);
+    color: var(--cta-ink);
     cursor: pointer;
   }
   button.secondary {
@@ -190,6 +214,12 @@
   }
   button:hover { filter: brightness(0.96); }
   button.secondary:hover { background: var(--paper-raised); filter: none; }
+  .theme-toggle {
+    padding: 8px 12px !important;
+    font-size: 16px !important;
+    line-height: 1;
+    border-radius: 9999px;
+  }
 
   .main-grid { display: flex; flex-direction: column; gap: 20px; }
 
@@ -202,7 +232,7 @@
   }
 
   table.calc { width: 100%; border-collapse: collapse; font-size: 16px; margin-top: 12px; }
-  table.calc th, table.calc td { text-align: left; padding: 8px 6px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); }
+  table.calc th, table.calc td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line-soft); }
   table.calc th { font-family: var(--font-micro); color: var(--ink-soft); font-weight: 400; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
   table.calc td.num, table.calc th.num { text-align: right; font-variant-numeric: tabular-nums; }
   tr.total-row td { font-weight: 700; border-top: 1px solid var(--ink); border-bottom: none; padding-top: 12px; }
@@ -263,7 +293,7 @@
 
   .login-gate {
     position: fixed; inset: 0; z-index: 1000;
-    background: color-mix(in srgb, var(--ink) 55%, transparent);
+    background: var(--overlay);
     display: flex; align-items: center; justify-content: center;
     padding: 20px;
   }
@@ -300,7 +330,8 @@
       <div class="sub">Cálculo de nómina quincenal — deducciones de ley Costa Rica</div>
     </div>
     <div style="display:flex; align-items:center; gap:10px;">
-      <span class="badge" id="empresaBadge">tuempresa.sticr.com</span>
+      <button type="button" class="secondary theme-toggle" id="themeToggleBtn" title="Cambiar tema" aria-label="Cambiar entre tema claro y oscuro">🌙</button>
+      <span class="badge" id="usuarioBadge">Usuario</span>
       <button type="button" class="secondary" id="logoutBtn" style="padding:6px 10px; font-size:12.5px;">Cerrar sesión</button>
     </div>
   </header>
@@ -463,6 +494,7 @@
         <div class="note" id="pendingSaveNote">Revisa los datos. Esta colilla no queda registrada ni se incluirá en el reporte general hasta que presiones "Guardar colilla".</div>
         <div class="actions-row">
           <button type="button" id="guardarColillaBtn">Guardar colilla</button>
+          <button type="button" class="secondary" id="editarColillaBtn" style="display:none;">Editar esta colilla</button>
           <button type="button" class="secondary" id="downloadPdfBtn">Descargar PDF</button>
           <button type="button" class="secondary" id="sendEmailBtn">Enviar por correo</button>
           <button class="secondary" onclick="window.print()">Imprimir</button>
@@ -523,6 +555,12 @@
           <h2>Historial de planillas</h2>
           <p class="hint">Colillas y reportes generados anteriormente. Filtra por período para encontrar uno rápido.</p>
         </div>
+      </div>
+      <div class="field" style="margin-bottom:6px;">
+        <label for="historyEmpSelect">Colaborador</label>
+        <select id="historyEmpSelect">
+          <option value="">— Todos los colaboradores —</option>
+        </select>
       </div>
       <div class="field-row" style="margin-bottom:6px;">
         <div class="field">
@@ -606,6 +644,32 @@
   // ============ Estado y configuración ============
   const API_BASE_URL = 'https://posadasweet.sticr.app'; // backend vinculado directamente, sin campo manual
   const EMPRESA_SUBDOMINIO = 'admin'; // instancia única vendida individualmente: no se pide subdominio en el login
+
+  // ============ Tema claro / oscuro ============
+  function aplicarTema(tema) {
+    document.documentElement.setAttribute('data-theme', tema);
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = tema === 'dark' ? '☀️' : '🌙';
+  }
+
+  function obtenerTemaGuardado() {
+    try { return localStorage.getItem('planilla_theme'); } catch (e) { return null; }
+  }
+
+  function inicializarTema() {
+    let tema = obtenerTemaGuardado();
+    if (!tema) tema = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    aplicarTema(tema);
+  }
+
+  inicializarTema();
+
+  document.getElementById('themeToggleBtn').addEventListener('click', () => {
+    const actual = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    const nuevo = actual === 'dark' ? 'light' : 'dark';
+    aplicarTema(nuevo);
+    try { localStorage.setItem('planilla_theme', nuevo); } catch (e) { /* ignora */ }
+  });
 
   let employees = [];
   let selectedId = null;
@@ -722,10 +786,7 @@
   });
 
   async function iniciarSesionApp() {
-    if (session.empresa) {
-      document.getElementById('empresaBadge').textContent = session.empresa.subdominio
-        ? session.empresa.subdominio + '.sticr.app' : session.empresa.nombre;
-    }
+    document.getElementById('usuarioBadge').textContent = session.usuario || 'Usuario';
     ocultarGate();
     await Promise.all([cargarEmpleados(), cargarAdminConfig(), cargarUsuarios()]);
     renderEmployees();
@@ -898,6 +959,7 @@
     if (employees.length === 0) {
       emptyNote.style.display = 'block';
       renderColillaEmpSelect();
+      renderHistoryEmpSelect();
       return;
     }
     emptyNote.style.display = 'none';
@@ -916,6 +978,7 @@
       list.appendChild(li);
     });
     renderColillaEmpSelect();
+    renderHistoryEmpSelect();
   }
 
   function renderColillaEmpSelect() {
@@ -925,6 +988,15 @@
       employees.map(emp => `<option value="${emp.id}">${escapeHtml(emp.nombre)}</option>`).join('');
     if (employees.some(e => String(e.id) === String(current))) select.value = current;
     else if (selectedId && employees.some(e => String(e.id) === String(selectedId))) select.value = selectedId;
+  }
+
+  function renderHistoryEmpSelect() {
+    const select = document.getElementById('historyEmpSelect');
+    if (!select) return;
+    const current = select.value;
+    select.innerHTML = '<option value="">— Todos los colaboradores —</option>' +
+      employees.map(emp => `<option value="${emp.id}">${escapeHtml(emp.nombre)}</option>`).join('');
+    if (employees.some(e => String(e.id) === String(current))) select.value = current;
   }
 
   function irAColilla(id) {
@@ -1293,6 +1365,8 @@
       const guardarBtn = document.getElementById('guardarColillaBtn');
       guardarBtn.disabled = false;
       guardarBtn.textContent = 'Guardar colilla';
+      guardarBtn.style.display = 'inline-block';
+      document.getElementById('editarColillaBtn').style.display = 'none';
       document.getElementById('pendingSaveNote').style.display = 'block';
 
       document.getElementById('colillaBox').style.display = 'block';
@@ -1346,6 +1420,7 @@
       btn.textContent = 'Guardada ✓';
       document.getElementById('pendingSaveNote').style.display = 'none';
       pendingColillaData = null;
+      colillaHistEntryActual = null;
     } catch (err) {
       alert(err.message || 'No se pudo guardar la colilla.');
       btn.disabled = false;
@@ -1485,7 +1560,7 @@
     renderHistorial();
   }
 
-  function renderHistorial(filterStart, filterEnd) {
+  function renderHistorial(filterStart, filterEnd, filterEmpId) {
     const list = document.getElementById('historyList');
     const emptyNote = document.getElementById('historyEmptyNote');
     list.innerHTML = '';
@@ -1493,9 +1568,20 @@
     let items = historyEntries;
     if (filterStart) items = items.filter(it => !it.periodEnd || it.periodEnd >= filterStart);
     if (filterEnd) items = items.filter(it => !it.periodStart || it.periodStart <= filterEnd);
+    if (filterEmpId) {
+      items = items.filter(it => it.tipo === 'colilla'
+        ? String(it.empId) === String(filterEmpId)
+        : it.rows.some(r => String(r.empId) === String(filterEmpId)));
+    }
 
     if (items.length === 0) {
       emptyNote.style.display = 'block';
+      emptyNote.textContent = (filterEmpId && (filterStart || filterEnd))
+        ? 'No hay ninguna colilla ni reporte generado para ese colaborador en el rango de fecha seleccionado.'
+        : 'Aún no hay colillas ni reportes guardados.';
+      if (filterEmpId && (filterStart || filterEnd)) {
+        alert('No hay ningún reporte generado para el rango de fecha seleccionado.');
+      }
       return;
     }
     emptyNote.style.display = 'none';
@@ -1529,10 +1615,11 @@
         li.className = 'history-item';
         if (entry.tipo === 'colilla') {
           li.innerHTML = `
-            <div>
+            <div style="flex:1;">
               <div class="h-main">${escapeHtml(entry.empNombre)}</div>
               <div class="h-meta">Neto ₡${formatNumber(entry.neto)} · ${formatFecha(entry.timestamp)}</div>
             </div>
+            <button class="del" onclick="event.stopPropagation(); editarColillaId('${entry.id}')" title="Editar colilla" aria-label="Editar colilla" style="color: var(--ink);">✎</button>
             <span class="h-tag">Colilla</span>
           `;
           li.addEventListener('click', () => verColillaHistorial(entry));
@@ -1551,7 +1638,10 @@
     });
   }
 
+  let colillaHistEntryActual = null;
+
   function verColillaHistorial(entry) {
+    colillaHistEntryActual = entry;
     document.getElementById('colillaMeta').textContent =
       entry.empNombre + ' · Período: ' + (entry.periodStart || '—') + ' a ' + (entry.periodEnd || '—');
     document.getElementById('netoAmount').textContent = '₡' + formatNumber(entry.neto);
@@ -1583,10 +1673,69 @@
       cajaNote.style.display = 'none';
     }
 
+    document.getElementById('guardarColillaBtn').style.display = 'none';
+    document.getElementById('pendingSaveNote').style.display = 'none';
+    document.getElementById('editarColillaBtn').style.display = 'inline-block';
+
     document.getElementById('colillaBox').style.display = 'block';
     switchTab('colilla');
     document.getElementById('colillaBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+
+  function editarColillaId(id) {
+    const entry = historyEntries.find(e => e.tipo === 'colilla' && String(e.id) === String(id));
+    if (!entry) return;
+    editarColillaHistorial(entry);
+  }
+
+  function editarColillaHistorial(entry) {
+    const emp = employees.find(e => String(e.id) === String(entry.empId));
+    if (!emp) {
+      alert('El colaborador de esta colilla ya no existe entre los colaboradores activos.');
+      return;
+    }
+    switchTab('colilla');
+    selectEmployee(emp.id);
+
+    const diasPrevios = Number(entry.diasVacaciones) || 0;
+    document.getElementById('periodStart').value = entry.periodStart || '';
+    document.getElementById('periodEnd').value = entry.periodEnd || '';
+    actualizarCamposFeriado();
+    document.getElementById('horasExtra').value = entry.horasExtra || 0;
+    document.getElementById('horasSinGoce').value = entry.horasSinGoce || 0;
+    document.getElementById('diasSinGoceCompletos').value = entry.diasSinGoceCompletos || 0;
+    document.getElementById('diasIncapacidad').value = entry.diasIncapacidad || 0;
+    document.getElementById('diasLicenciaMP').value = entry.diasLicenciaMP || 0;
+    document.getElementById('diasLicenciaCuido').value = entry.diasLicenciaCuido || 0;
+    document.getElementById('horasFeriado').value = entry.horasFeriado || 0;
+    if (entry.feriadoNombre) {
+      const feriadoSelect = document.getElementById('feriadoNombre');
+      if ([...feriadoSelect.options].some(o => o.value === entry.feriadoNombre)) {
+        feriadoSelect.value = entry.feriadoNombre;
+      }
+    }
+
+    // La colilla ya guardada descontó estos días del saldo del colaborador: se
+    // "devuelven" temporalmente al máximo del campo para poder editarla sin que
+    // el saldo actual (ya descontado) bloquee el valor original.
+    const vacInput = document.getElementById('diasVacaciones');
+    const maxEfectivo = (emp.vacacionesDisponibles || 0) + diasPrevios;
+    vacInput.max = maxEfectivo;
+    vacInput.disabled = maxEfectivo <= 0;
+    vacInput.value = diasPrevios;
+
+    document.getElementById('colillaBox').style.display = 'none';
+    document.getElementById('calcTable').style.display = 'none';
+    document.getElementById('runHint').textContent =
+      'Editando la colilla guardada de ' + emp.nombre + ' para el período ' + (entry.periodStart || '—') + ' a ' + (entry.periodEnd || '—') +
+      '. Ajusta los datos y presiona "Calcular colilla" y luego "Guardar colilla" para actualizarla.';
+    document.getElementById('payForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  document.getElementById('editarColillaBtn').addEventListener('click', () => {
+    if (!colillaHistEntryActual) return;
+    editarColillaHistorial(colillaHistEntryActual);
+  });
 
   function verReporteHistorial(entry) {
     lastReportRows = entry.rows;
@@ -1598,11 +1747,16 @@
   }
 
   document.getElementById('historyFilterBtn').addEventListener('click', () => {
-    renderHistorial(document.getElementById('historyStart').value, document.getElementById('historyEnd').value);
+    renderHistorial(
+      document.getElementById('historyStart').value,
+      document.getElementById('historyEnd').value,
+      document.getElementById('historyEmpSelect').value
+    );
   });
   document.getElementById('historyClearBtn').addEventListener('click', () => {
     document.getElementById('historyStart').value = '';
     document.getElementById('historyEnd').value = '';
+    document.getElementById('historyEmpSelect').value = '';
     renderHistorial();
   });
 
@@ -1817,8 +1971,6 @@
     }
     document.getElementById('adminNombreEmpresa').value = adminConfig.nombreEmpresa;
     document.getElementById('adminCorreo').value = adminConfig.correoAdmin;
-    document.getElementById('empresaBadge').textContent = adminConfig.subdominio
-      ? adminConfig.subdominio + '.sticr.app' : (adminConfig.nombreEmpresa || 'tuempresa.sticr.com');
   }
 
   document.getElementById('adminForm').addEventListener('submit', async (e) => {
@@ -1839,8 +1991,6 @@
     try {
       const actualizado = await apiFetch('/api/admin/empresa', { method: 'PUT', body: { nombre: nombreEmpresa, correoAdmin } });
       adminConfig = { nombreEmpresa: actualizado.nombre || '', correoAdmin: actualizado.correo_admin || '', subdominio: actualizado.subdominio || '' };
-      document.getElementById('empresaBadge').textContent = adminConfig.subdominio
-        ? adminConfig.subdominio + '.sticr.app' : (adminConfig.nombreEmpresa || 'tuempresa.sticr.com');
 
       const savedNote = document.getElementById('adminSavedNote');
       savedNote.style.display = 'block';
