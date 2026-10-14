@@ -742,8 +742,20 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
   // ============ Estado y configuración ============
-  const API_BASE_URL = 'https://posadasweet.sticr.app'; // backend vinculado directamente, sin campo manual
-  const EMPRESA_SUBDOMINIO = 'admin'; // instancia única vendida individualmente: no se pide subdominio en el login
+  // Dos modos, según la dirección con la que se abre el sistema:
+  //  - Servicio compartido: cualquier "nombre.sticr.app" (por ejemplo minegocio.sticr.app o demo.sticr.app).
+  //    El nombre de la dirección ES la empresa, y todos usan la misma API.
+  //  - Instalación individual (posadasweet y la dirección planilla.sticr.app): API y empresa fijas, como antes.
+  const API_COMPARTIDA = 'https://planilla-api.sticr.app';
+  const DIRECCIONES_INDIVIDUALES = ['www', 'planilla', 'posadasweet', 'planilla-api', 'api', 'app'];
+  const coincidenciaDireccion = location.hostname.toLowerCase().match(/^([a-z0-9-]+)\.sticr\.app$/);
+  const MODO_COMPARTIDO = !!coincidenciaDireccion && !DIRECCIONES_INDIVIDUALES.includes(coincidenciaDireccion[1]);
+  const API_BASE_URL = MODO_COMPARTIDO ? API_COMPARTIDA : 'https://posadasweet.sticr.app'; // backend vinculado directamente, sin campo manual
+  const EMPRESA_SUBDOMINIO = MODO_COMPARTIDO ? coincidenciaDireccion[1] : 'admin'; // en modo individual no se pide subdominio en el login
+  const ES_DEMO = MODO_COMPARTIDO && EMPRESA_SUBDOMINIO === 'demo';
+  const DEMO_USUARIO = 'demo';
+  const DEMO_PASSWORD = 'demo1234'; // pública a propósito: la demo es de acceso libre
+  const URL_COMPRA = 'https://sticr.app/proyectos/control-de-planilla';
 
   // ============ Tema claro / oscuro ============
   function aplicarTema(tema) {
@@ -827,6 +839,10 @@
     try {
       const raw = localStorage.getItem('planilla_session');
       session = raw ? JSON.parse(raw) : { token: null, empresa: null, usuario: null };
+      // Una sesión guardada de otra empresa no sirve aquí: se descarta.
+      if (session.empresa && session.empresa.subdominio && session.empresa.subdominio !== EMPRESA_SUBDOMINIO) {
+        session = { token: null, empresa: null, usuario: null };
+      }
     } catch (e) {
       session = { token: null, empresa: null, usuario: null };
     }
@@ -845,7 +861,9 @@
 
   function mostrarLoginView() {
     document.getElementById('loginForm').style.display = 'flex';
-    document.getElementById('gateSubtitle').textContent = 'Ingresa con tu usuario administrativo.';
+    document.getElementById('gateSubtitle').textContent = ES_DEMO
+      ? 'Demo pública. Usuario: ' + DEMO_USUARIO + ' · Contraseña: ' + DEMO_PASSWORD
+      : 'Ingresa con tu usuario administrativo.';
   }
 
   function mostrarGate() {
@@ -888,12 +906,32 @@
   async function iniciarSesionApp() {
     document.getElementById('usuarioBadge').textContent = (session.usuario && session.usuario.usuario) || 'Usuario';
     ocultarGate();
+    if (ES_DEMO) mostrarBannerDemo();
     await Promise.all([cargarEmpleados(), cargarAdminConfig(), cargarUsuarios()]);
     renderEmployees();
     renderReportInputs();
     aplicarPeriodoDefault();
     actualizarCamposFeriado();
     await cargarHistorialDesdeAPI();
+  }
+
+  // Aviso fijo en la parte de arriba cuando se está en la demo.
+  function mostrarBannerDemo() {
+    if (document.getElementById('demoBanner')) return;
+    const banner = document.createElement('div');
+    banner.id = 'demoBanner';
+    banner.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;'
+      + 'padding:10px 16px;margin-bottom:16px;background:var(--cta);color:var(--cta-ink);border:1px solid var(--line);'
+      + 'font-family:var(--font-micro);font-size:13px;';
+    const texto = document.createElement('span');
+    texto.textContent = 'Estás en la demo de Control de Planilla. Los datos son de ejemplo y se restablecen cada pocas horas.';
+    const enlace = document.createElement('a');
+    enlace.href = URL_COMPRA;
+    enlace.textContent = 'Contratar este sistema';
+    enlace.style.cssText = 'color:inherit;font-weight:600;text-decoration:underline;';
+    banner.append(texto, enlace);
+    const contenedor = document.getElementById('appWrap');
+    contenedor.insertBefore(banner, contenedor.firstChild);
   }
 
   async function iniciarAutenticacion() {
@@ -904,6 +942,20 @@
         return;
       } catch (err) {
         console.error('No se pudo restaurar la sesión', err);
+      }
+    }
+    // En la demo se entra sin pedir usuario ni contraseña.
+    if (ES_DEMO) {
+      try {
+        const data = await apiFetch('/api/auth/login', {
+          method: 'POST',
+          body: { subdominio: EMPRESA_SUBDOMINIO, usuario: DEMO_USUARIO, password: DEMO_PASSWORD }
+        });
+        guardarSesion(data);
+        await iniciarSesionApp();
+        return;
+      } catch (err) {
+        console.error('No se pudo entrar a la demo automáticamente', err);
       }
     }
     mostrarGate();
