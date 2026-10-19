@@ -325,7 +325,7 @@
         <label for="loginPassword">Contraseña</label>
         <input type="password" id="loginPassword" required autocomplete="new-password" value="">
       </div>
-      <div class="note" id="loginError" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink);"></div>
+      <div class="note" id="loginError" role="alert" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink);"></div>
       <button type="submit">Ingresar</button>
     </form>
   </div>
@@ -343,6 +343,8 @@
       <button type="button" class="secondary" id="logoutBtn" style="padding:6px 10px; font-size:12.5px;">Cerrar sesión</button>
     </div>
   </header>
+
+  <div class="note" id="avisoError" role="alert" style="display:none;"></div>
 
   <nav class="tabs" id="tabsNav">
     <button class="tab-btn active" data-tab="empleados">Colaboradores</button>
@@ -904,6 +906,7 @@
   });
 
   async function iniciarSesionApp() {
+    ocultarError();
     document.getElementById('usuarioBadge').textContent = (session.usuario && session.usuario.usuario) || 'Usuario';
     ocultarGate();
     if (ES_DEMO) mostrarBannerDemo();
@@ -935,6 +938,7 @@
   }
 
   async function iniciarAutenticacion() {
+    let sesionError = '';
     cargarSesionGuardada();
     if (session.token) {
       try {
@@ -942,6 +946,7 @@
         return;
       } catch (err) {
         console.error('No se pudo restaurar la sesión', err);
+        sesionError = 'No se pudo restaurar tu sesión: ' + (err.message || 'error desconocido') + '.';
       }
     }
     // En la demo se entra sin pedir usuario ni contraseña.
@@ -956,9 +961,15 @@
         return;
       } catch (err) {
         console.error('No se pudo entrar a la demo automáticamente', err);
+        sesionError = 'No se pudo entrar a la demo: ' + (err.message || 'error desconocido') + '.';
       }
     }
     mostrarGate();
+    if (sesionError) {
+      const errorBox = document.getElementById('loginError');
+      errorBox.textContent = sesionError;
+      errorBox.style.display = 'block';
+    }
   }
 
   // ============ Feriados de pago obligatorio (Costa Rica) ============
@@ -1043,7 +1054,7 @@
     horasInput.disabled = false;
     select.disabled = false;
     select.innerHTML = '<option value="">— Selecciona el feriado —</option>' +
-      feriados.map(f => `<option value="${f.nombre}">${f.nombre} (${f.fecha})</option>`).join('');
+      feriados.map(f => `<option value="${escapeHtml(f.nombre)}">${escapeHtml(f.nombre)} (${escapeHtml(f.fecha)})</option>`).join('');
     if (feriados.some(f => f.nombre === valorPrevio)) select.value = valorPrevio;
     nota.style.display = 'none';
   }
@@ -1100,6 +1111,7 @@
       employees = rows.map(mapEmpleado);
     } catch (err) {
       console.error('No se pudieron cargar los colaboradores', err);
+      mostrarError('No se pudieron cargar los colaboradores: ' + (err.message || 'error desconocido') + '.');
       employees = [];
     }
   }
@@ -1121,13 +1133,16 @@
       li.className = 'emp-item' + (String(emp.id) === String(selectedId) ? ' active' : '');
       const antig = antiguedadTexto(emp.fecha);
       li.innerHTML = `
-        <div onclick="irAColilla('${emp.id}')" style="flex:1; cursor:pointer;">
+        <div data-accion="ir" style="flex:1; cursor:pointer;">
           <div class="name">${escapeHtml(emp.nombre)}</div>
-          <div class="meta">₡${formatNumber(emp.salario)} / mes · ${antig} · ${emp.vacacionesDisponibles} día(s) vac.</div>
+          <div class="meta">₡${escapeHtml(formatNumber(emp.salario))} / mes · ${escapeHtml(antig)} · ${escapeHtml(emp.vacacionesDisponibles)} día(s) vac.</div>
         </div>
-        <button class="del" onclick="event.stopPropagation(); editEmployee('${emp.id}')" title="Editar" aria-label="Editar empleado" style="color: var(--ink);">✎</button>
-        <button class="del" onclick="event.stopPropagation(); deleteEmployee('${emp.id}')" title="Eliminar" aria-label="Eliminar empleado">✕</button>
+        <button class="del" data-accion="editar" title="Editar" aria-label="Editar empleado" style="color: var(--ink);">✎</button>
+        <button class="del" data-accion="eliminar" title="Eliminar" aria-label="Eliminar empleado">✕</button>
       `;
+      li.querySelector('[data-accion="ir"]').addEventListener('click', () => irAColilla(emp.id));
+      li.querySelector('[data-accion="editar"]').addEventListener('click', (ev) => { ev.stopPropagation(); editEmployee(emp.id); });
+      li.querySelector('[data-accion="eliminar"]').addEventListener('click', (ev) => { ev.stopPropagation(); deleteEmployee(emp.id); });
       list.appendChild(li);
     });
     renderColillaEmpSelect();
@@ -1139,7 +1154,7 @@
     const select = document.getElementById('colillaEmpSelect');
     const current = select.value;
     select.innerHTML = '<option value="">— Selecciona un colaborador —</option>' +
-      employees.map(emp => `<option value="${emp.id}">${escapeHtml(emp.nombre)}</option>`).join('');
+      employees.map(emp => `<option value="${escapeHtml(emp.id)}">${escapeHtml(emp.nombre)}</option>`).join('');
     if (employees.some(e => String(e.id) === String(current))) select.value = current;
     else if (selectedId && employees.some(e => String(e.id) === String(selectedId))) select.value = selectedId;
   }
@@ -1149,7 +1164,7 @@
     if (!select) return;
     const current = select.value;
     select.innerHTML = '<option value="">— Todos los colaboradores —</option>' +
-      employees.map(emp => `<option value="${emp.id}">${escapeHtml(emp.nombre)}</option>`).join('');
+      employees.map(emp => `<option value="${escapeHtml(emp.id)}">${escapeHtml(emp.nombre)}</option>`).join('');
     if (employees.some(e => String(e.id) === String(current))) select.value = current;
   }
 
@@ -1158,7 +1173,7 @@
     if (!select) return;
     const current = select.value;
     select.innerHTML = '<option value="">— Selecciona un colaborador —</option>' +
-      employees.map(emp => `<option value="${emp.id}">${escapeHtml(emp.nombre)}</option>`).join('');
+      employees.map(emp => `<option value="${escapeHtml(emp.id)}">${escapeHtml(emp.nombre)}</option>`).join('');
     if (employees.some(e => String(e.id) === String(current))) select.value = current;
   }
 
@@ -1211,10 +1226,23 @@
     return tieneVacaciones(fechaStr);
   }
 
+  // Escapa texto para HTML y para atributos (&, <, >, " y ').
   function escapeHtml(str) {
-    const d = document.createElement('div');
-    d.textContent = str;
-    return d.innerHTML;
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // Muestra un error en el área de avisos (role="alert") de la parte superior.
+  function mostrarError(mensaje) {
+    const caja = document.getElementById('avisoError');
+    if (!caja) return;
+    caja.textContent = mensaje;
+    caja.style.display = 'block';
+  }
+  function ocultarError() {
+    const caja = document.getElementById('avisoError');
+    if (caja) caja.style.display = 'none';
   }
 
   function formatNumber(n) {
@@ -1354,7 +1382,7 @@
     const puedeVacaciones = tieneVacaciones(emp.fecha);
     let hint = 'Salario mensual ₡' + formatNumber(emp.salario) + ' · ' + antiguedadTexto(emp.fecha) +
       ' · Vacaciones disponibles: ' + emp.vacacionesDisponibles + ' día(s)';
-    document.getElementById('runHint').innerHTML = escapeHtml(hint);
+    document.getElementById('runHint').textContent = hint;
 
     const vacInput = document.getElementById('diasVacaciones');
     vacInput.max = emp.vacacionesDisponibles;
@@ -1437,7 +1465,12 @@
     rows.forEach(([label, amount, cls]) => {
       const tr = document.createElement('tr');
       if (cls) tr.className = cls;
-      tr.innerHTML = `<td>${label}</td><td class="num">₡${formatNumber(Math.abs(amount))}</td>`;
+      const tdLabel = document.createElement('td');
+      tdLabel.textContent = label;
+      const tdMonto = document.createElement('td');
+      tdMonto.className = 'num';
+      tdMonto.textContent = '₡' + formatNumber(Math.abs(amount));
+      tr.append(tdLabel, tdMonto);
       body.appendChild(tr);
     });
   }
@@ -1755,13 +1788,14 @@
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     } catch (err) {
       console.error('No se pudo cargar el historial', err);
+      mostrarError('No se pudo cargar el historial: ' + (err.message || 'error desconocido') + '.');
       historyEntries = [];
     }
     renderHistorial();
   }
 
   function metaConAutor(textoBase, entry) {
-    return entry.creadoPor ? (textoBase + ' · por ' + escapeHtml(entry.creadoPor)) : textoBase;
+    return escapeHtml(entry.creadoPor ? (textoBase + ' · por ' + entry.creadoPor) : textoBase);
   }
 
   function renderHistorial(filterStart, filterEnd, filterEmpId, filterTipo) {
@@ -1813,7 +1847,7 @@
       const numColillas = grupo.entries.filter(e => e.tipo === 'colilla').length;
       const numBoletas = grupo.entries.filter(e => e.tipo === 'boleta').length;
       const tieneReporte = grupo.entries.some(e => e.tipo === 'reporte');
-      header.innerHTML = `Período: ${grupo.periodStart || '—'} a ${grupo.periodEnd || '—'}` +
+      header.textContent = `Período: ${grupo.periodStart || '—'} a ${grupo.periodEnd || '—'}` +
         (numColillas ? ` · ${numColillas} colilla(s)` : '') +
         (numBoletas ? ` · ${numBoletas} boleta(s) de vacaciones` : '') +
         (tieneReporte ? ' · reporte generado' : '');
@@ -1828,9 +1862,10 @@
               <div class="h-main">${escapeHtml(entry.empNombre)}</div>
               <div class="h-meta">${metaConAutor('Neto ₡' + formatNumber(entry.neto) + ' · ' + formatFecha(entry.timestamp), entry)}</div>
             </div>
-            <button class="del" onclick="event.stopPropagation(); editarColillaId('${entry.id}')" title="Editar colilla" aria-label="Editar colilla" style="color: var(--ink);">✎</button>
+            <button class="del" data-accion="editar" title="Editar colilla" aria-label="Editar colilla" style="color: var(--ink);">✎</button>
             <span class="h-tag">Colilla</span>
           `;
+          li.querySelector('[data-accion="editar"]').addEventListener('click', (ev) => { ev.stopPropagation(); editarColillaId(entry.id); });
           li.addEventListener('click', () => verColillaHistorial(entry));
         } else if (entry.tipo === 'boleta') {
           li.innerHTML = `
@@ -1838,9 +1873,10 @@
               <div class="h-main">${escapeHtml(entry.empNombre)}</div>
               <div class="h-meta">${metaConAutor(entry.diasDisfrutar + ' día(s) de vacaciones · ' + formatFecha(entry.timestamp), entry)}</div>
             </div>
-            <button class="del" onclick="event.stopPropagation(); editarBoletaId('${entry.id}')" title="Editar boleta" aria-label="Editar boleta" style="color: var(--ink);">✎</button>
+            <button class="del" data-accion="editar" title="Editar boleta" aria-label="Editar boleta" style="color: var(--ink);">✎</button>
             <span class="h-tag">Boleta vacaciones</span>
           `;
+          li.querySelector('[data-accion="editar"]').addEventListener('click', (ev) => { ev.stopPropagation(); editarBoletaId(entry.id); });
           li.addEventListener('click', () => verBoletaHistorial(entry));
         } else {
           li.innerHTML = `
@@ -2181,6 +2217,7 @@
         if (ventanas[i]) ventanas[i].location.href = url;
       } catch (err) {
         console.error('Error enviando colilla de ' + row.nombre, err);
+        mostrarError('No se pudo preparar el correo de ' + row.nombre + ': ' + (err.message || 'error desconocido') + '.');
       }
 
       // pequeña pausa para que el navegador procese cada descarga antes de continuar
@@ -2515,6 +2552,7 @@
       adminConfig = { nombreEmpresa: emp.nombre || '', correoAdmin: emp.correo_admin || '', subdominio: emp.subdominio || '' };
     } catch (err) {
       console.error('No se pudo cargar la configuración de la empresa', err);
+      mostrarError('No se pudo cargar la configuración de la empresa: ' + (err.message || 'error desconocido') + '.');
       adminConfig = { nombreEmpresa: '', correoAdmin: '', subdominio: '' };
     }
     document.getElementById('adminNombreEmpresa').value = adminConfig.nombreEmpresa;
@@ -2558,6 +2596,7 @@
       usuarios = await apiFetch('/api/admin/usuarios');
     } catch (err) {
       console.error('No se pudieron cargar los usuarios', err);
+      mostrarError('No se pudieron cargar los usuarios: ' + (err.message || 'error desconocido') + '.');
       usuarios = [];
     }
     renderUsuarios();
@@ -2577,9 +2616,11 @@
         <div style="flex:1;">
           <div class="name">${escapeHtml(u.usuario)}</div>
         </div>
-        <button class="del" onclick="editarUsuario('${u.id}')" title="Editar" aria-label="Editar usuario" style="color: var(--ink);">✎</button>
-        <button class="del" onclick="eliminarUsuario('${u.id}')" title="Eliminar" aria-label="Eliminar usuario">✕</button>
+        <button class="del" data-accion="editar" title="Editar" aria-label="Editar usuario" style="color: var(--ink);">✎</button>
+        <button class="del" data-accion="eliminar" title="Eliminar" aria-label="Eliminar usuario">✕</button>
       `;
+      li.querySelector('[data-accion="editar"]').addEventListener('click', () => editarUsuario(u.id));
+      li.querySelector('[data-accion="eliminar"]').addEventListener('click', () => eliminarUsuario(u.id));
       list.appendChild(li);
     });
   }
