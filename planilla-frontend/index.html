@@ -728,7 +728,8 @@
             <label for="usuarioPasswordConfirm">Confirmar contraseña</label>
             <input type="password" id="usuarioPasswordConfirm" autocomplete="new-password">
           </div>
-          <div class="note" id="usuarioFormError" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink);"></div>
+          <div class="note" id="usuarioFormError" role="alert" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink);"></div>
+          <div class="note" id="usuarioFormOk" role="status" style="display:none;"></div>
           <div class="actions-row" style="margin-top:0;">
             <button type="submit" id="usuarioFormSubmitBtn">Crear usuario</button>
             <button type="button" class="secondary" id="usuarioFormCancelBtn" style="display:none;">Cancelar</button>
@@ -2642,6 +2643,7 @@
     editingUsuarioId = null;
     document.getElementById('usuarioForm').reset();
     document.getElementById('usuarioFormError').style.display = 'none';
+    document.getElementById('usuarioFormOk').style.display = 'none';
     document.getElementById('usuarioFormTitle').textContent = 'Crear usuario';
     document.getElementById('usuarioFormSubmitBtn').textContent = 'Crear usuario';
     document.getElementById('usuarioFormCancelBtn').style.display = 'none';
@@ -2670,7 +2672,9 @@
     const pass1 = document.getElementById('usuarioPassword').value;
     const pass2 = document.getElementById('usuarioPasswordConfirm').value;
     const errorBox = document.getElementById('usuarioFormError');
+    const okBox = document.getElementById('usuarioFormOk');
     errorBox.style.display = 'none';
+    okBox.style.display = 'none';
     if (!nombre) return;
 
     const duplicado = usuarios.find(u => u.usuario.toLowerCase() === nombre.toLowerCase() && String(u.id) !== String(editingUsuarioId));
@@ -2684,8 +2688,8 @@
       errorBox.style.display = 'block';
       return;
     }
-    if (pass1 && pass1.length < 4) {
-      errorBox.textContent = 'La contraseña debe tener al menos 4 caracteres.';
+    if (pass1 && pass1.length < 8) {
+      errorBox.textContent = 'La contraseña debe tener al menos 8 caracteres.';
       errorBox.style.display = 'block';
       return;
     }
@@ -2701,8 +2705,23 @@
       if (editingUsuarioId) {
         const body = { usuario: nombre };
         if (pass1) body.password = pass1;
-        await apiFetch('/api/admin/usuarios/' + editingUsuarioId, { method: 'PUT', body });
+        const rp = await apiFetch('/api/admin/usuarios/' + editingUsuarioId, { method: 'PUT', body });
+        // Si cambió su PROPIA contraseña, el servidor invalida el token anterior y entrega uno nuevo:
+        // se guarda conservando el resto de la sesión. Si no viene `token` (servidor anterior), no cambia nada.
+        const esPropia = !!pass1 && !!session.usuario && String(session.usuario.id) === String(editingUsuarioId);
+        const cambioPropia = esPropia || !!(rp && rp.token);
+        if (rp && rp.token) {
+          guardarSesion({
+            token: rp.token,
+            empresa: session.empresa,
+            usuario: Object.assign({}, session.usuario, rp.usuario ? { usuario: rp.usuario } : {})
+          });
+        }
         cancelarEdicionUsuario();
+        if (cambioPropia) {
+          okBox.textContent = 'Tu contraseña se cambió correctamente. Tu sesión sigue abierta.';
+          okBox.style.display = 'block';
+        }
       } else {
         await apiFetch('/api/admin/usuarios', { method: 'POST', body: { usuario: nombre, password: pass1 } });
         document.getElementById('usuarioForm').reset();
