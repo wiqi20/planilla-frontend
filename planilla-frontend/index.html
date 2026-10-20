@@ -176,6 +176,7 @@
   .history-period-header:first-child { padding-top: 4px; }
 
   form.stack { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  #demoNoDisponible { flex-direction: column; gap: 10px; margin-top: 14px; }
   .field { display: flex; flex-direction: column; gap: 4px; }
   .field label { font-size: 12px; color: var(--ink-soft); }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -328,6 +329,14 @@
       <div class="note" id="loginError" role="alert" style="display:none; background: var(--ink); color: var(--paper); border-color: var(--ink);"></div>
       <button type="submit">Ingresar</button>
     </form>
+
+    <!-- Solo en la demo: si no se pudo entrar sola, en lugar del formulario se muestra este aviso. -->
+    <div class="stack" id="demoNoDisponible" role="alert" style="display:none;">
+      <h3 style="margin:0; font-size:22px; line-height:1.2;">La demo no está disponible en este momento</h3>
+      <p class="hint">No pudimos abrir la demo de Control de Planilla. Puede ser un problema pasajero: vuelve a intentarlo en unos segundos.</p>
+      <button type="button" id="demoReintentar">Reintentar</button>
+      <a id="demoContratar" href="https://sticr.app/proyectos/control-de-planilla" style="font-family:var(--font-micro); font-size:13px; font-weight:600; color:inherit;">Contratar este sistema</a>
+    </div>
   </div>
 </div>
 
@@ -807,7 +816,8 @@
     return API_BASE_URL.replace(/\/+$/, '');
   }
 
-  async function apiFetch(path, options = {}) {
+  // Una sola petición HTTP, sin ninguna lógica de sesión. Devuelve { res, data }.
+  async function enviarPeticion(path, options) {
     const base = getApiBase();
     if (!base) throw new Error('Define primero la URL del backend.');
     const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
@@ -824,18 +834,59 @@
     }
     let data = null;
     try { data = await res.json(); } catch (e) { /* respuestas 204 no traen cuerpo */ }
-    if (!res.ok) {
-      if (res.status === 401) cerrarSesion(true);
-      const err = new Error((data && data.error) || ('Error ' + res.status));
-      err.data = data;
-      throw err;
+    return { res, data };
+  }
+
+  function errorDeRespuesta({ res, data }) {
+    const err = new Error((data && data.error) || ('Error ' + res.status));
+    err.data = data;
+    return err;
+  }
+
+  async function apiFetch(path, options = {}) {
+    const tokenEnviado = session.token;
+    let r = await enviarPeticion(path, options);
+    if (r.res.ok) return r.data;
+    if (r.res.status === 401) {
+      if (ES_DEMO && path !== '/api/auth/login') {
+        // Demo: la sesión se renueva sola (la demo se restablece cada pocas horas y el token guardado deja de servir).
+        // Un único re-ingreso, compartido por todas las peticiones que fallen a la vez, y la petición se reintenta UNA vez.
+        try {
+          // Si otra petición ya renovó el token mientras esta estaba en vuelo, solo se reintenta.
+          if (session.token === tokenEnviado) await ingresarComoDemo();
+        } catch (e) {
+          mostrarDemoNoDisponible();
+          throw errorDeRespuesta(r);
+        }
+        r = await enviarPeticion(path, options);
+        if (r.res.ok) return r.data;
+        if (r.res.status === 401) mostrarDemoNoDisponible(); // un segundo 401 con sesión recién creada: no hay más que intentar
+        throw errorDeRespuesta(r);
+      }
+      cerrarSesion(true);
     }
-    return data;
+    throw errorDeRespuesta(r);
   }
 
   function guardarSesion(data) {
     session = { token: data.token, empresa: data.empresa, usuario: data.usuario };
     try { localStorage.setItem('planilla_session', JSON.stringify(session)); } catch (e) { /* ignora */ }
+  }
+
+  // Solo demo: entra con el usuario público. Si ya hay un ingreso en curso, todas las llamadas comparten la misma promesa.
+  let ingresoDemoEnCurso = null;
+  function ingresarComoDemo() {
+    if (!ingresoDemoEnCurso) {
+      ingresoDemoEnCurso = (async () => {
+        const r = await enviarPeticion('/api/auth/login', {
+          method: 'POST',
+          body: { subdominio: EMPRESA_SUBDOMINIO, usuario: DEMO_USUARIO, password: DEMO_PASSWORD }
+        });
+        if (!r.res.ok) throw errorDeRespuesta(r);
+        guardarSesion(r.data);
+      })().finally(() => { ingresoDemoEnCurso = null; });
+    }
+    return ingresoDemoEnCurso;
   }
 
   function cargarSesionGuardada() {
@@ -863,16 +914,30 @@
   }
 
   function mostrarLoginView() {
+    document.getElementById('demoNoDisponible').style.display = 'none';
     document.getElementById('loginForm').style.display = 'flex';
-    document.getElementById('gateSubtitle').textContent = ES_DEMO
-      ? 'Demo pública. Usuario: ' + DEMO_USUARIO + ' · Contraseña: ' + DEMO_PASSWORD
-      : 'Ingresa con tu usuario administrativo.';
+    document.getElementById('gateSubtitle').style.display = '';
+    document.getElementById('gateSubtitle').textContent = 'Ingresa con tu usuario administrativo.';
   }
 
   function mostrarGate() {
+    if (ES_DEMO) { mostrarDemoNoDisponible(); return; } // la demo nunca pide usuario ni contraseña
     mostrarLoginView();
     document.getElementById('loginGate').style.display = 'flex';
     document.getElementById('appWrap').style.display = 'none';
+  }
+
+  // Solo demo: reemplaza al formulario cuando no se pudo entrar sola. No muestra credenciales.
+  function mostrarDemoNoDisponible() {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('gateSubtitle').style.display = 'none';
+    document.getElementById('loginGate').style.display = 'flex';
+    document.getElementById('appWrap').style.display = 'none';
+    const panel = document.getElementById('demoNoDisponible');
+    panel.style.display = 'flex';
+    const btn = document.getElementById('demoReintentar');
+    btn.disabled = false;
+    btn.focus();
   }
 
   function ocultarGate() {
@@ -902,9 +967,13 @@
     }
   });
 
-  document.getElementById('logoutBtn').addEventListener('click', () => {
-    cerrarSesion(false);
-  });
+  if (ES_DEMO) {
+    document.getElementById('logoutBtn').style.display = 'none'; // en la demo no se sale: el aviso superior ya invita a contratar
+  } else {
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      cerrarSesion(false);
+    });
+  }
 
   async function iniciarSesionApp() {
     ocultarError();
@@ -938,7 +1007,28 @@
     contenedor.insertBefore(banner, contenedor.firstChild);
   }
 
+  // Solo demo: entra sin pedir usuario ni contraseña. Si no se puede, apiFetch / esta función muestran
+  // el aviso "La demo no está disponible" (nunca el formulario).
+  async function entrarEnDemo(forzarIngreso) {
+    cargarSesionGuardada();
+    try {
+      if (forzarIngreso || !session.token) await ingresarComoDemo();
+      // Con un token guardado que ya no sirve, apiFetch lo renueva solo (ver ingresarComoDemo).
+      await iniciarSesionApp();
+    } catch (err) {
+      console.error('No se pudo entrar a la demo automáticamente', err);
+      mostrarDemoNoDisponible();
+    }
+  }
+
+  document.getElementById('demoReintentar').addEventListener('click', async (e) => {
+    e.target.disabled = true;
+    await entrarEnDemo(true);
+    e.target.disabled = false;
+  });
+
   async function iniciarAutenticacion() {
+    if (ES_DEMO) { await entrarEnDemo(); return; }
     let sesionError = '';
     cargarSesionGuardada();
     if (session.token) {
@@ -948,21 +1038,6 @@
       } catch (err) {
         console.error('No se pudo restaurar la sesión', err);
         sesionError = 'No se pudo restaurar tu sesión: ' + (err.message || 'error desconocido') + '.';
-      }
-    }
-    // En la demo se entra sin pedir usuario ni contraseña.
-    if (ES_DEMO) {
-      try {
-        const data = await apiFetch('/api/auth/login', {
-          method: 'POST',
-          body: { subdominio: EMPRESA_SUBDOMINIO, usuario: DEMO_USUARIO, password: DEMO_PASSWORD }
-        });
-        guardarSesion(data);
-        await iniciarSesionApp();
-        return;
-      } catch (err) {
-        console.error('No se pudo entrar a la demo automáticamente', err);
-        sesionError = 'No se pudo entrar a la demo: ' + (err.message || 'error desconocido') + '.';
       }
     }
     mostrarGate();
