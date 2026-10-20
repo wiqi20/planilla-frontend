@@ -2,6 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<script>
+  // Solo demo.sticr.app (mismo criterio que ES_DEMO: host exactamente "demo"): se decide ANTES del primer pintado,
+  // para que el formulario de ingreso nunca se vea mientras la demo entra sola.
+  (function () {
+    var m = location.hostname.toLowerCase().match(/^([a-z0-9-]+)\.sticr\.app$/);
+    if (m && m[1] === 'demo') document.documentElement.setAttribute('data-demo', 'abriendo');
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Planilla — Control de Nómina</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -309,9 +317,21 @@
   .login-card {
     width: 100%; max-width: 380px;
   }
+  /* Solo demo (el atributo lo pone el script del <head>): abriendo -> estado neutro; app -> la app; panel -> aviso de fallo. */
+  #demoAbriendo { display: none; }
+  html[data-demo] #loginGate, html[data-demo] #appWrap { display: none !important; }
+  html[data-demo] #loginForm, html[data-demo] #gateSubtitle { display: none !important; }
+  html[data-demo="abriendo"] #demoAbriendo { display: flex; }
+  html[data-demo="app"] #appWrap { display: block !important; }
+  html[data-demo="panel"] #loginGate { display: flex !important; }
+  #demoNoDisponible .hint { color: var(--ink); } /* contraste suficiente en el aviso de fallo */
 </style>
 </head>
 <body>
+<div class="login-gate" id="demoAbriendo" role="status">
+  <div class="panel login-card"><p class="hint" style="margin:0; color:var(--ink);">Abriendo la demo…</p></div>
+</div>
+
 <div class="login-gate" id="loginGate">
   <div class="panel login-card">
     <h2 style="margin-bottom:2px;">Control de Planilla</h2>
@@ -935,12 +955,17 @@
     document.getElementById('appWrap').style.display = 'none';
     const panel = document.getElementById('demoNoDisponible');
     panel.style.display = 'flex';
+    estadoDemo('panel');
     const btn = document.getElementById('demoReintentar');
     btn.disabled = false;
     btn.focus();
   }
 
+  // Solo demo: cambia la pantalla que muestra el CSS (abriendo | app | panel).
+  function estadoDemo(e) { if (ES_DEMO) document.documentElement.setAttribute('data-demo', e); }
+
   function ocultarGate() {
+    estadoDemo('app');
     document.getElementById('loginGate').style.display = 'none';
     document.getElementById('appWrap').style.display = 'block';
   }
@@ -1010,6 +1035,7 @@
   // Solo demo: entra sin pedir usuario ni contraseña. Si no se puede, apiFetch / esta función muestran
   // el aviso "La demo no está disponible" (nunca el formulario).
   async function entrarEnDemo(forzarIngreso) {
+    estadoDemo('abriendo');
     cargarSesionGuardada();
     try {
       if (forzarIngreso || !session.token) await ingresarComoDemo();
