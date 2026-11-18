@@ -1,0 +1,180 @@
+{
+  "resultados": [
+    {
+      "id": "F1a cliente activo ve el ingreso",
+      "ok": true,
+      "detalle": "{\"form\":true,\"noindex\":false,\"direccionPorCarga\":1}"
+    },
+    {
+      "id": "F1b cliente activo entra y ve la app",
+      "ok": true,
+      "detalle": "appWrap visible tras el ingreso"
+    },
+    {
+      "id": "F1c recarga con sesión guardada entra directo a la app",
+      "ok": true,
+      "detalle": "llamadas en la recarga: [\"GET /api/auth/direccion?valor=qaea008be8\",\"GET /api/empleados\",\"GET /api/admin/empresa\",\"GET /api/admin/usuarios\"]"
+    },
+    {
+      "id": "F1d cerrar sesión y volver a entrar",
+      "ok": true,
+      "detalle": "ok"
+    },
+    {
+      "id": "F1e sin errores de JavaScript",
+      "ok": true,
+      "detalle": "[]"
+    },
+    {
+      "id": "F1f consultas de /direccion por carga de página",
+      "ok": true,
+      "detalle": "10 consultas en 10 cargas (resto de llamadas por carga: [\"GET /api/empleados\",\"GET /api/admin/empresa\",\"GET /api/admin/usuarios\"])"
+    },
+    {
+      "id": "F2 empresa suspendida ve el ingreso y el aviso de suspensión",
+      "ok": true,
+      "detalle": "Esta cuenta está suspendida. Contacta a STI para reactivarla."
+    },
+    {
+      "id": "F3 planilla.sticr.app entra con la empresa admin",
+      "ok": true,
+      "detalle": "[\"POST /api/auth/login\",\"GET /api/empleados\",\"GET /api/admin/empresa\",\"GET /api/admin/usuarios\"]"
+    },
+    {
+      "id": "F4 la demo entra sola sin formulario ni /direccion",
+      "ok": true,
+      "detalle": "[\"POST /api/auth/login\",\"GET /api/empleados\",\"GET /api/admin/empresa\",\"GET /api/admin/usuarios\"]"
+    },
+    {
+      "id": "F5 con la API caída se ve el ingreso",
+      "ok": true,
+      "detalle": "{\"attr\":null,\"noindex\":false,\"formEnDom\":true,\"form\":true,\"app\":false,\"noExiste\":false,\"titulo\":\"Planilla — Control de Nómina\",\"href\":\"https://sticr.app\",\"texto\":\"Ir a sticr.app\",\"desborde\":false,\"error\":\"\"}"
+    },
+    {
+      "id": "F6 libre008be8.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":1}"
+    },
+    {
+      "id": "F6 crumble.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F6 crumble-admin.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F6 pasteleria-demo.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F6 pasteleria-demo-admin.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F6 www.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F6 admin.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F6 api.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F6 app.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F7 cliente heredado ab.sticr.app ve el ingreso y entra",
+      "ok": true,
+      "detalle": "{\"form\":true,\"noExiste\":false,\"noindex\":false,\"entra\":true}"
+    },
+    {
+      "id": "F7 cliente heredado q8.sticr.app ve el ingreso y entra",
+      "ok": true,
+      "detalle": "{\"form\":true,\"noExiste\":false,\"noindex\":false,\"entra\":true}"
+    },
+    {
+      "id": "F7 cliente heredado qaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.sticr.app ve el ingreso y entra",
+      "ok": true,
+      "detalle": "{\"form\":true,\"noExiste\":false,\"noindex\":false,\"entra\":true}"
+    },
+    {
+      "id": "F7 cliente heredado ayuda.sticr.app ve el ingreso y entra",
+      "ok": true,
+      "detalle": "{\"form\":true,\"noExiste\":false,\"noindex\":false,\"entra\":true}"
+    },
+    {
+      "id": "F8 no-existe 1280px light: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 no-existe 390px light: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 teclado light: Tab llega a \"Ir a sticr.app\" con foco visible y Enter navega",
+      "ok": true,
+      "detalle": "{\"tag\":\"A\",\"texto\":\"Ir a sticr.app\",\"outline\":\"solid 2px\",\"alto\":66}"
+    },
+    {
+      "id": "F8 ingreso 1280px light: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 ingreso 390px light: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 teclado light: en el ingreso el primer campo alcanzable es el usuario",
+      "ok": true,
+      "detalle": "primer foco: loginUsuario"
+    },
+    {
+      "id": "F8 no-existe 1280px dark: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 no-existe 390px dark: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 teclado dark: Tab llega a \"Ir a sticr.app\" con foco visible y Enter navega",
+      "ok": true,
+      "detalle": "{\"tag\":\"A\",\"texto\":\"Ir a sticr.app\",\"outline\":\"solid 2px\",\"alto\":66}"
+    },
+    {
+      "id": "F8 ingreso 1280px dark: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 ingreso 390px dark: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 teclado dark: en el ingreso el primer campo alcanzable es el usuario",
+      "ok": true,
+      "detalle": "primer foco: loginUsuario"
+    }
+  ],
+  "totalDireccion": 27
+}
