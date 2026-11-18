@@ -2,7 +2,7 @@
 
 - **Fecha:** 17 nov 2026
 - **Rama / archivos:** probado `fix/subdominio-inexistente` de `planilla-backend` (commit `3c93808`) y de `planilla-frontend` (commit `7db6590`). Pruebas e informe de QA en `docs/qa-subdominio-inexistente` de los dos repositorios: `qa-subdominio-inexistente/` (pruebas), `docs/subdominio-inexistente/qa.md` (este informe) y `docs/subdominio-inexistente/qa-capturas/` (evidencia).
-- **Veredicto:** **RECHAZADO**
+- **Veredicto:** primera vuelta **RECHAZADO**; re-prueba (18 nov 2026) **APROBADO** (ver «Re-prueba» al final)
 
 ## Resumen
 Todo lo pedido funciona para los clientes creados por el camino normal (el aprovisionamiento al cobrar): una empresa activa o suspendida sigue viendo y usando el ingreso, `planilla.sticr.app` entra con la empresa `admin`, la demo entra sola, con la API caída se ve el ingreso y los nombres libres o reservados ven «Esta dirección no existe» con `noindex` y un enlace a sticr.app. Se rechaza por un defecto alto (QA-01): una empresa que **existe** en la base pero cuyo nombre no cumple las reglas nuevas (menos de 3 o más de 30 caracteres, o un nombre reservado como `ayuda` o `soporte`) recibe `existe:false` y su dirección muestra «Esta dirección no existe». Desaparece el formulario y el cliente no puede entrar. El backend sí le deja iniciar sesión; lo que lo bloquea es la nueva comprobación.
@@ -78,3 +78,34 @@ Todo lo pedido funciona para los clientes creados por el camino normal (el aprov
 
 ## Dependencias nuevas
 - Ninguna (Playwright y axe-core solo del entorno de QA, no se agregan a los repositorios).
+
+## Re-prueba (18 nov 2026) · Veredicto: **APROBADO**
+
+Commits probados: `planilla-backend` `fix/subdominio-inexistente` **`90f5b88`** y `planilla-frontend` `fix/subdominio-inexistente` **`287485d`**. Se repitió el área completa afectada (backend `/direccion`, límite por IP, E2E entero), no solo los defectos.
+
+### Estado de los defectos
+| Defecto | Estado | Evidencia |
+|---|---|---|
+| QA-01 (Alto) clientes con nombre heredado ven «no existe» | **CERRADO** | `/direccion` ya no aplica las reglas de venta: acepta cualquier etiqueta DNS de 1–63 caracteres y excluye solo `NUNCA_CLIENTE` (los 4 de otros sistemas, `www`, `admin`, `api`, `app`). QA-B4 pasa. En el E2E, `ab`, `q8`, un nombre de 40 caracteres y `ayuda` ven el ingreso, sin `noindex`, y entran a la app (F7, `qa-capturas-reprueba/heredado-*.png`) |
+| QA-02 (Bajo, informativo) `admin.sticr.app` → «no existe» | Sin cambio (decisión del PM) | F6 `admin` da «no existe» aunque la fila `admin` existe; `planilla.sticr.app` entra con ella (F3) |
+| QA-03 (Medio) contraste del ingreso en tema claro | **CERRADO** | El subtítulo y las etiquetas usan `--ink` en tema claro. axe da 0 fallas en el ingreso a 1280 y 390 px, en tema claro y oscuro (F8) |
+
+### Resultados
+- **Backend, suite completa** con Postgres 16 desechable en `localhost` (puerto propio, `/var/lib/postgresql/qa82513r2`), tras `npm ci` con el `package-lock.json` de la rama (body-parser 1.20.9, qs 6.16.2) → **113 de 113**, ya con `test/direccion-qa.test.js`. Las aserciones de QA se copiaron sin cambios; solo cambian la ruta del `require` y el comentario de cabecera. Sin base: 32 pasan, 81 se saltan, 0 fallan.
+- **Pruebas de QA del backend** (`test/direccion-qa.test.js`) → **8 de 8**: activa y suspendida, demo, login y `/direccion` de los nombres heredados, registrar-empresa 2/3/30/31, límite de 120 (la 121 da 429 y el login no se afecta), `X-Forwarded-For` falso y entradas raras.
+- **Prueba de navegador del especialista** (`pruebas/direccion-inexistente.mjs`, 287485d) → **19 de 19**.
+- **E2E de QA contra el backend corregido en local** (`qa-subdominio-inexistente/e2e-backend-real.mjs`, con los casos heredados ampliados a `ab`, `q8`, 40 caracteres y `ayuda`) → **35 de 35**:
+  - Empresa activa: ingreso, entrar, recargar con sesión, cerrar sesión y volver a entrar, sin errores de JavaScript.
+  - Empresa suspendida: ingreso y aviso de suspensión.
+  - `planilla.sticr.app` con `admin`, demo sin login a 390 px y API caída → ingreso.
+  - Nombre libre y los 8 excluidos → «Esta dirección no existe», `noindex`, enlace a `https://sticr.app` y sin formulario. Los 8 no consultan la API.
+  - 1 consulta a `/direccion` por carga de página.
+  - 390 y 1280 px, claro y oscuro, axe sin fallas, teclado.
+  - Resultados en `qa-capturas-reprueba/resultados.json`.
+
+### Notas de la re-prueba
+- Ahora `seed-admin` rechaza nombres que no son etiqueta DNS y avisa, sin bloquear, si el nombre no cumple las reglas de venta o está en `NUNCA_CLIENTE`. Lo revisé leyendo el código; no lo ejecuté.
+- La clave del límite agrupa IPv6 por `/64` y trata `::ffff:a.b.c.d` como IPv4 (`claveDeIp`). Se revisó el código y QA-B6/QA-B7 pasan con IPv4; no se probó con IPv6 real.
+- Sigue sin poder probarse lo mismo que en la primera vuelta: lint, tsc y build (los repositorios no tienen esos scripts), varias réplicas o el proxy real de Railway, rastreadores sin JavaScript (siguen recibiendo 200 sin `noindex`), y navegadores distintos de Chromium.
+
+**Veredicto de la re-prueba: APROBADO.** Pasan todos los flujos críticos pedidos y no quedan defectos bloqueantes ni altos.

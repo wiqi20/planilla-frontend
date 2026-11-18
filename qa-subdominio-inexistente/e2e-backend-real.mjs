@@ -40,6 +40,7 @@ async function provision(ruta, body) {
 const id = crypto.randomBytes(3).toString('hex');
 const ACTIVA = `qaea${id}`, SUSP = `qaes${id}`, CLAVE = 'clave-de-ejemplo-qa-1';
 const LEGADO_CORTO = 'q8', LEGADO_RESERVADO = 'ayuda';
+const HEREDADAS = ['ab', LEGADO_CORTO, 'qa' + 'x'.repeat(38), LEGADO_RESERVADO]; // 2, 2, 40 caracteres y reservado
 async function sembrar() {
   for (const [sub, nombre] of [[ACTIVA, 'Panadería Ejemplo QA'], [SUSP, 'Ferretería Ejemplo QA']]) {
     await provision('/empresa', { nombreEmpresa: nombre, subdominio: sub, stripeSubscriptionId: `sub_${sub}` });
@@ -49,14 +50,14 @@ async function sembrar() {
   // Empresa 'admin' (la de planilla.sticr.app, la crea db/seed-admin.js) y dos "heredadas" (nombres que el registro
   // público aceptaba antes o que seed-admin acepta sin validar).
   const hash = await bcrypt.hash(CLAVE, 10);
-  for (const sub of ['admin', LEGADO_CORTO, LEGADO_RESERVADO]) {
+  for (const sub of ['admin', ...HEREDADAS]) {
     const e = await pool.query("INSERT INTO empresas (nombre, subdominio) VALUES ($1, $2) ON CONFLICT (subdominio) DO UPDATE SET activa = true RETURNING id", [`QA ${sub}`, sub]);
     await pool.query("DELETE FROM usuarios WHERE empresa_id = $1", [e.rows[0].id]);
     await pool.query("INSERT INTO usuarios (empresa_id, usuario, password_hash) VALUES ($1, 'dueno', $2)", [e.rows[0].id, hash]);
   }
 }
 async function limpiar() {
-  await pool.query("DELETE FROM empresas WHERE subdominio = ANY($1)", [[ACTIVA, SUSP, 'admin', LEGADO_CORTO, LEGADO_RESERVADO]]);
+  await pool.query("DELETE FROM empresas WHERE subdominio = ANY($1)", [[ACTIVA, SUSP, 'admin', ...HEREDADAS]]);
   await pool.end();
 }
 
@@ -212,12 +213,14 @@ try {
   }
 
   // F7. Clientes heredados (nombres fuera de 3-30 o reservados que no son de otro sistema).
-  for (const nombre of [LEGADO_CORTO, LEGADO_RESERVADO]) {
+  for (const nombre of HEREDADAS) {
     const { ctx, page } = await abrir(`${nombre}.sticr.app`);
     await listo(page);
     const e = await estado(page);
-    marcar(`F7 cliente heredado ${nombre}.sticr.app sigue viendo el ingreso`, e.form && !e.noExiste, JSON.stringify({ form: e.form, noExiste: e.noExiste, formEnDom: e.formEnDom }));
-    await page.screenshot({ path: `${CAP}/heredado-${nombre}-1280.png` });
+    await entrar(page, 'dueno', CLAVE);
+    const entra = await page.waitForFunction(() => document.getElementById('appWrap').offsetParent !== null, null, { timeout: 15000 }).then(() => true, () => false);
+    marcar(`F7 cliente heredado ${nombre}.sticr.app ve el ingreso y entra`, e.form && !e.noExiste && !e.noindex && entra, JSON.stringify({ form: e.form, noExiste: e.noExiste, noindex: e.noindex, entra }));
+    await page.screenshot({ path: `${CAP}/heredado-${nombre.length > 10 ? 'largo40' : nombre}-1280.png` });
     await ctx.close();
   }
 
