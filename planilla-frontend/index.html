@@ -340,6 +340,10 @@
   html[data-demo="app"] #appWrap { display: block !important; }
   html[data-demo="panel"] #loginGate { display: flex !important; }
   #demoNoDisponible .hint { color: var(--ink); } /* contraste suficiente en el aviso de fallo */
+  /* QA-03: en tema claro, --ink-soft sobre --paper-raised da 2.74:1. El subtítulo y las etiquetas del ingreso usan
+     --ink (más de 9:1); en tema oscuro --ink-soft ya cumple y no se toca. */
+  html:not([data-theme="dark"]) #loginGate .hint,
+  html:not([data-theme="dark"]) #loginGate .field label { color: var(--ink); }
 
   /* Dirección sin cliente de Planilla (el atributo lo pone el script del <head>):
      comprobando -> estado neutro mientras la API responde; no-existe -> página "Esta dirección no existe". */

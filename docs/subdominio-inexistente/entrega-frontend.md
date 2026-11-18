@@ -52,3 +52,16 @@
 
 ## Dependencias nuevas
 - Ninguna.
+
+---
+
+## Correcciones tras la revisión (QA y Seguridad: RECHAZADO)
+
+- **QA-01 / H-1 (alto):** se corrigió en el backend (commit `90f5b88` de `planilla-backend`, rama `fix/subdominio-inexistente`). `/api/auth/direccion` responde `existe:true` para cualquier empresa que exista, aunque su nombre no cumpla las reglas de venta. El frontend no cambia en esto: solo muestra «no existe» con `existe === false`.
+- **QA-03 (medio, anterior a este cambio):** en tema claro, el subtítulo del ingreso (`#gateSubtitle`) y las etiquetas «Usuario» y «Contraseña» pasan de `--ink-soft` (2,74:1) a `--ink`, sin colores nuevos. Medido en el navegador: **8,57:1** en tema claro. El tema oscuro no se toca y da 5,78:1. Solo cambia dentro de `#loginGate`; el resto de la app sigue igual.
+- `pruebas/direccion-inexistente.mjs` suma dos casos de contraste (claro y oscuro) y las capturas `ingreso-claro-1280.png` e `ingreso-oscuro-1280.png`.
+
+### Cómo se comprobó (correcciones)
+- `PLAYWRIGHT_DIR=/opt/npm-tools/node_modules CHROME=/usr/bin/google-chrome node pruebas/direccion-inexistente.mjs planilla-frontend/index.html docs/subdominio-inexistente/capturas` → **19 de 19** `ok`: los 17 de antes y los 2 de contraste.
+- Contra el backend corregido en local (base desechable): las empresas heredadas `ab` y `ayuda` muestran el ingreso, sin `noindex`; `noexiste4` muestra «no existe».
+- Este repositorio sigue sin `package.json`, así que no tiene lint ni build.
