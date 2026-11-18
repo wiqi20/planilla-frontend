@@ -168,6 +168,27 @@ await caso('demo.sticr.app: flujo de la demo, sin consultar /direccion ni noinde
   await ctx.close();
 });
 
+// QA-03: subtítulo y etiquetas del ingreso con contraste de al menos 4.5:1 en los dos temas.
+const lum = (rgb) => {
+  const [r, g, b] = rgb.match(/\d+/g).slice(0, 3).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+for (const tema of ['light', 'dark']) {
+  await caso(`ingreso (${tema}): subtítulo y etiquetas con contraste >= 4.5:1`, async () => {
+    const { ctx, page } = await abrir('planilla.sticr.app', { tema });
+    await page.waitForTimeout(500);
+    const fondo = await page.locator('#loginGate .login-card').evaluate((e) => getComputedStyle(e).backgroundColor);
+    for (const sel of ['#gateSubtitle', 'label[for=loginUsuario]', 'label[for=loginPassword]']) {
+      const color = await page.locator(sel).evaluate((e) => getComputedStyle(e).color);
+      const r = contraste(color, fondo);
+      assert.ok(r >= 4.5, `${sel}: ${r.toFixed(2)}:1`);
+    }
+    await page.screenshot({ path: `${CAPTURAS}/ingreso-${tema === 'light' ? 'claro' : 'oscuro'}-1280.png` });
+    await ctx.close();
+  });
+}
+
 await browser.close();
 console.log(resultados.join('\n'));
 if (resultados.some((r) => r.startsWith('FALLA'))) process.exit(1);
