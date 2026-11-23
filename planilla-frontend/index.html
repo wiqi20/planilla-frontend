@@ -3,11 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <script>
-  // Solo demo.sticr.app (mismo criterio que ES_DEMO: host exactamente "demo"): se decide ANTES del primer pintado,
-  // para que el formulario de ingreso nunca se vea mientras la demo entra sola.
+  // Se decide ANTES del primer pintado, para que el formulario de ingreso nunca se vea cuando no corresponde:
+  //  - demo.sticr.app (mismo criterio que ES_DEMO: host exactamente "demo"): la demo entra sola.
+  //  - Subdominios que nunca son un cliente de Planilla (otros sistemas de STI y nombres reservados; misma lista
+  //    que NUNCA_CLIENTE más abajo y que src/subdominios.js del backend): "Esta dirección no existe", sin consultar nada.
+  //  - Cualquier otro nombre.sticr.app (salvo las direcciones propias de Planilla): se muestra "Cargando…" mientras
+  //    la API confirma que la empresa existe. Mientras tanto la página no se indexa (noindex); si existe, se quita.
   (function () {
     var m = location.hostname.toLowerCase().match(/^([a-z0-9-]+)\.sticr\.app$/);
-    if (m && m[1] === 'demo') document.documentElement.setAttribute('data-demo', 'abriendo');
+    if (!m) return;
+    var nombre = m[1];
+    var nuncaCliente = ['crumble', 'crumble-admin', 'pasteleria-demo', 'pasteleria-demo-admin', 'www', 'admin', 'api', 'app'];
+    var propias = ['planilla', 'planilla-api'];
+    if (nombre === 'demo') { document.documentElement.setAttribute('data-demo', 'abriendo'); return; }
+    if (propias.indexOf(nombre) !== -1) return;
+    document.documentElement.setAttribute('data-direccion', nuncaCliente.indexOf(nombre) !== -1 ? 'no-existe' : 'comprobando');
+    var robots = document.createElement('meta');
+    robots.name = 'robots';
+    robots.content = 'noindex';
+    robots.id = 'robotsNoindex';
+    document.head.appendChild(robots);
   })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -325,9 +340,55 @@
   html[data-demo="app"] #appWrap { display: block !important; }
   html[data-demo="panel"] #loginGate { display: flex !important; }
   #demoNoDisponible .hint { color: var(--ink); } /* contraste suficiente en el aviso de fallo */
+  /* QA-03: en tema claro, --ink-soft sobre --paper-raised da 2.74:1. El subtítulo y las etiquetas del ingreso usan
+     --ink (más de 9:1); en tema oscuro --ink-soft ya cumple y no se toca. */
+  html:not([data-theme="dark"]) #loginGate .hint,
+  html:not([data-theme="dark"]) #loginGate .field label { color: var(--ink); }
+
+  /* Dirección sin cliente de Planilla (el atributo lo pone el script del <head>):
+     comprobando -> estado neutro mientras la API responde; no-existe -> página "Esta dirección no existe". */
+  #direccionComprobando, #direccionNoExiste { display: none; }
+  html[data-direccion] #loginGate, html[data-direccion] #appWrap { display: none !important; }
+  html[data-direccion="comprobando"] #direccionComprobando { display: flex; }
+  html[data-direccion="no-existe"] #direccionNoExiste { display: flex; }
+  #direccionNoExiste {
+    min-height: 100vh; align-items: center; justify-content: center; padding: 20px;
+  }
+  #direccionNoExiste .login-card { max-width: 460px; }
+  #direccionNoExiste h1 {
+    font-family: var(--font-serif); font-weight: 400; font-size: 46px; line-height: 1;
+    letter-spacing: -0.97px; margin: 0 0 12px;
+  }
+  #direccionNoExiste p { margin: 0 0 24px; color: var(--ink); }
+  #direccionNoExiste .direccion { font-family: var(--font-micro); font-size: 15px; overflow-wrap: anywhere; }
+  .enlace-cta {
+    display: inline-block; font-family: var(--font-sans); font-weight: 700; font-size: 16px;
+    text-transform: uppercase; letter-spacing: 0.02em; text-decoration: none;
+    padding: 20px 30px; border-radius: 10px; border: 1px solid var(--ink);
+    background: var(--cta); color: var(--cta-ink);
+  }
+  .enlace-cta:hover { filter: brightness(0.96); }
+  .enlace-cta:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  @media (max-width: 480px) {
+    #direccionNoExiste h1 { font-size: 36px; }
+    #direccionNoExiste .panel { padding: 24px; }
+    .enlace-cta { display: block; text-align: center; }
+  }
 </style>
 </head>
 <body>
+<!-- Subdominio sin cliente de Planilla: página simple, sin formulario de ingreso (ver data-direccion en el <head>). -->
+<div class="login-gate" id="direccionComprobando" role="status">
+  <div class="panel login-card"><p class="hint" style="margin:0; color:var(--ink);">Cargando…</p></div>
+</div>
+<main id="direccionNoExiste" aria-labelledby="direccionNoExisteTitulo">
+  <div class="panel login-card">
+    <h1 id="direccionNoExisteTitulo">Esta dirección no existe</h1>
+    <p>No hay ningún sistema en <span class="direccion" id="direccionNombre"></span>, o todavía no está disponible. Revisa que la dirección esté bien escrita.</p>
+    <a class="enlace-cta" href="https://sticr.app">Ir a sticr.app</a>
+  </div>
+</main>
+
 <div class="login-gate" id="demoAbriendo" role="status">
   <div class="panel login-card"><p class="hint" style="margin:0; color:var(--ink);">Abriendo la demo…</p></div>
 </div>
@@ -777,10 +838,15 @@
   // Dos modos, según la dirección con la que se abre el sistema:
   //  - Servicio compartido: cualquier "nombre.sticr.app" (por ejemplo minegocio.sticr.app o demo.sticr.app).
   //    El nombre de la dirección ES la empresa, y todos usan la misma API.
-  //  - Direcciones reservadas (www, planilla, planilla-api, api, app): ya no tienen una instalación propia.
+  //  - Direcciones propias de Planilla (planilla, planilla-api): ya no tienen una instalación propia.
   //    Si se abren, usan la API compartida con la empresa fija 'admin'; el inicio de sesión falla si esa empresa no existe.
+  //  - www, api, app, admin y los subdominios de otros sistemas (NUNCA_CLIENTE): "Esta dirección no existe".
+  //  - nombre.sticr.app que no es una empresa (según GET /api/auth/direccion): "Esta dirección no existe".
   const API_COMPARTIDA = 'https://planilla-api.sticr.app';
-  const DIRECCIONES_INDIVIDUALES = ['www', 'planilla', 'planilla-api', 'api', 'app'];
+  const DIRECCIONES_INDIVIDUALES = ['planilla', 'planilla-api']; // propias de Planilla (mismo criterio que el script del <head>)
+  // Subdominios que nunca son un cliente de Planilla (otros sistemas de STI y nombres reservados): muestran
+  // "Esta dirección no existe". Misma lista que el script del <head>; el backend (src/subdominios.js) es quien manda.
+  const NUNCA_CLIENTE = ['crumble', 'crumble-admin', 'pasteleria-demo', 'pasteleria-demo-admin', 'www', 'admin', 'api', 'app'];
   const coincidenciaDireccion = location.hostname.toLowerCase().match(/^([a-z0-9-]+)\.sticr\.app$/);
   const MODO_COMPARTIDO = !!coincidenciaDireccion && !DIRECCIONES_INDIVIDUALES.includes(coincidenciaDireccion[1]);
   const API_BASE_URL = API_COMPARTIDA; // siempre la API compartida (ya no hay instalaciones individuales), sin campo manual
@@ -1054,7 +1120,57 @@
     e.target.disabled = false;
   });
 
+  // ============ Dirección sin cliente de Planilla ============
+  // Muestra "Esta dirección no existe" y quita del documento el ingreso y la app (no quedan ni ocultos).
+  function mostrarDireccionNoExiste() {
+    document.documentElement.setAttribute('data-direccion', 'no-existe');
+    document.getElementById('direccionNombre').textContent = location.hostname.toLowerCase(); // textContent: sin HTML
+    document.title = 'Esta dirección no existe — STI';
+    ['loginGate', 'appWrap', 'demoAbriendo', 'direccionComprobando'].forEach((id) => {
+      const nodo = document.getElementById(id);
+      if (nodo) nodo.remove();
+    });
+    if (!document.getElementById('robotsNoindex')) {
+      const robots = document.createElement('meta');
+      robots.name = 'robots'; robots.content = 'noindex'; robots.id = 'robotsNoindex';
+      document.head.appendChild(robots);
+    }
+  }
+
+  // Pregunta a la API si este subdominio es una empresa. Devuelve true, false o null (no se pudo saber).
+  // La API responde solo { existe }; un nombre reservado, inválido o libre da siempre la misma respuesta.
+  async function consultarDireccion(nombre) {
+    const control = new AbortController();
+    const espera = setTimeout(() => control.abort(), 8000);
+    try {
+      const res = await fetch(getApiBase() + '/api/auth/direccion?valor=' + encodeURIComponent(nombre), {
+        method: 'GET', cache: 'no-store', credentials: 'omit', signal: control.signal
+      });
+      if (!res.ok) return null; // 429, 5xx...: no se sabe
+      const data = await res.json();
+      return data && typeof data.existe === 'boolean' ? data.existe : null;
+    } catch (e) {
+      return null; // sin red, tiempo agotado o respuesta rara
+    } finally {
+      clearTimeout(espera);
+    }
+  }
+
+  // true si hay que seguir con el ingreso normal. Si no se pudo confirmar (API caída, límite de consultas), se sigue
+  // con el ingreso de siempre: un cliente real nunca debe quedarse sin poder entrar por un fallo de esta comprobación.
+  async function comprobarDireccion() {
+    if (!MODO_COMPARTIDO || ES_DEMO) return true;
+    if (NUNCA_CLIENTE.includes(EMPRESA_SUBDOMINIO)) { mostrarDireccionNoExiste(); return false; }
+    const existe = await consultarDireccion(EMPRESA_SUBDOMINIO);
+    if (existe === false) { mostrarDireccionNoExiste(); return false; }
+    document.documentElement.removeAttribute('data-direccion');
+    const robots = document.getElementById('robotsNoindex');
+    if (robots) robots.remove();
+    return true;
+  }
+
   async function iniciarAutenticacion() {
+    if (!(await comprobarDireccion())) return;
     if (ES_DEMO) { await entrarEnDemo(); return; }
     let sesionError = '';
     cargarSesionGuardada();
