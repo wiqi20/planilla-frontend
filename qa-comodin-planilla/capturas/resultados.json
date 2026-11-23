@@ -1,0 +1,247 @@
+[
+  {
+    "id": "Q1a cliente.planilla.sticr.app (existe) muestra el ingreso, sin noindex",
+    "ok": true,
+    "detalle": "{\"attr\":null,\"noindex\":false,\"form\":true,\"app\":false,\"noExiste\":false,\"texto\":\"\\n  \\n    Esta dirección no existe\\n    No hay ningún sistema en , o todavía no está disponible. Revisa que la dirección esté bien escrita.\\n    Ir a sticr.app\\n  \\n\",\"desborde\":false,\"error\":\"\",\"contratar\":false}"
+  },
+  {
+    "id": "Q1b entra a la app",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "id": "Q1c el backend responde Access-Control-Allow-Origin con el origen nuevo",
+    "ok": true,
+    "detalle": "[\"https://qacac579f0.planilla.sticr.app\"]"
+  },
+  {
+    "id": "Q1d cerrar sesión y volver a entrar",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "id": "Q1e sin errores de JavaScript",
+    "ok": true,
+    "detalle": "[]"
+  },
+  {
+    "id": "Q2a en A.planilla.sticr.app el usuario de B no entra",
+    "ok": true,
+    "detalle": "Empresa, usuario o contraseña incorrectos"
+  },
+  {
+    "id": "Q2b el token de A solo ve la empresa A",
+    "ok": true,
+    "detalle": "{\"status\":200,\"subdominio\":\"qacac579f0\"}"
+  },
+  {
+    "id": "Q2c sin sesión la API responde 401",
+    "ok": true,
+    "detalle": "401"
+  },
+  {
+    "id": "Q3 demo.planilla.sticr.app 1280px: entra sola, nunca el ingreso, aviso de contratar, se recorren las pestañas",
+    "ok": true,
+    "detalle": "{\"app\":true,\"formVisto\":false,\"contratar\":true,\"tabs\":[\"empleados\",\"colilla\",\"boletas\",\"reporte\",\"historial\",\"admin\"],\"recorrido\":true,\"llamadas\":[\"POST /api/auth/login\",\"GET /api/empleados\",\"GET /api/admin/empresa\",\"GET /api/admin/usuarios\"]}"
+  },
+  {
+    "id": "Q3 demo 1280px sin desborde horizontal",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "id": "Q3 demo.planilla.sticr.app 390px: entra sola, nunca el ingreso, aviso de contratar, se recorren las pestañas",
+    "ok": true,
+    "detalle": "{\"app\":true,\"formVisto\":false,\"contratar\":true,\"tabs\":[\"empleados\",\"colilla\",\"boletas\",\"reporte\",\"historial\",\"admin\"],\"recorrido\":true,\"llamadas\":[\"POST /api/auth/login\",\"GET /api/empleados\",\"GET /api/admin/empresa\",\"GET /api/admin/usuarios\"]}"
+  },
+  {
+    "id": "Q3 demo 390px sin desborde horizontal",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "id": "Q4 planilla.sticr.app/ → ficha sin ingreso ni llamadas",
+    "ok": true,
+    "detalle": "{\"url\":\"https://sticr.app/proyectos/control-de-planilla\",\"formVisto\":false,\"llamadas\":[],\"historial\":2}"
+  },
+  {
+    "id": "Q4 planilla.sticr.app/?x=1 → ficha sin ingreso ni llamadas",
+    "ok": true,
+    "detalle": "{\"url\":\"https://sticr.app/proyectos/control-de-planilla\",\"formVisto\":false,\"llamadas\":[],\"historial\":2}"
+  },
+  {
+    "id": "Q5 crumble.planilla.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 crumble.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 crumble-admin.planilla.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 crumble-admin.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 pasteleria-demo.planilla.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 pasteleria-demo.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 pasteleria-demo-admin.planilla.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 pasteleria-demo-admin.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 www.planilla.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 www.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 admin.planilla.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 admin.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 api.planilla.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 api.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 app.planilla.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q5 app.sticr.app → no existe sin consultar",
+    "ok": true,
+    "detalle": "{\"llamadas\":[]}"
+  },
+  {
+    "id": "Q6 a.b.planilla.sticr.app → no existe, noindex, sin ingreso ni admin",
+    "ok": true,
+    "detalle": "{\"llamadas\":[],\"attr\":\"no-existe\"}"
+  },
+  {
+    "id": "Q6 qacac579f0.up.railway.app → no existe, noindex, sin ingreso ni admin",
+    "ok": true,
+    "detalle": "{\"llamadas\":[],\"attr\":\"no-existe\"}"
+  },
+  {
+    "id": "Q6 planilla.sticr.app.ejemplo.com → no existe, noindex, sin ingreso ni admin",
+    "ok": true,
+    "detalle": "{\"llamadas\":[],\"attr\":\"no-existe\"}"
+  },
+  {
+    "id": "Q6 qacac579f0.planilla.sticr.app.ejemplo.com → no existe, noindex, sin ingreso ni admin",
+    "ok": true,
+    "detalle": "{\"llamadas\":[],\"attr\":\"no-existe\"}"
+  },
+  {
+    "id": "Q6 xn--ejemplo.ejemplo.com → no existe, noindex, sin ingreso ni admin",
+    "ok": true,
+    "detalle": "{\"llamadas\":[],\"attr\":\"no-existe\"}"
+  },
+  {
+    "id": "Q6 planilla-api.planilla.sticr.app → no existe, noindex, sin ingreso ni admin",
+    "ok": true,
+    "detalle": "{\"llamadas\":[\"GET /api/auth/direccion?valor=planilla-api\"],\"attr\":\"no-existe\"}"
+  },
+  {
+    "id": "Q6 librec579f0.planilla.sticr.app → no existe, noindex, sin ingreso ni admin",
+    "ok": true,
+    "detalle": "{\"llamadas\":[\"GET /api/auth/direccion?valor=librec579f0\"],\"attr\":\"no-existe\"}"
+  },
+  {
+    "id": "Q6 sticr.app → no existe, noindex, sin ingreso ni admin",
+    "ok": true,
+    "detalle": "{\"llamadas\":[],\"attr\":\"no-existe\"}"
+  },
+  {
+    "id": "Q6 demo.planilla.sticr.app. → no existe, noindex, sin ingreso ni admin",
+    "ok": true,
+    "detalle": "{\"llamadas\":[],\"attr\":\"no-existe\"}"
+  },
+  {
+    "id": "Q6 qacac579f0.planilla.sticr.app. → no existe, noindex, sin ingreso ni admin",
+    "ok": true,
+    "detalle": "{\"llamadas\":[],\"attr\":\"no-existe\"}"
+  },
+  {
+    "id": "Q6 ejemplo.com → no existe, noindex, sin ingreso ni admin",
+    "ok": true,
+    "detalle": "{\"llamadas\":[],\"attr\":\"no-existe\"}"
+  },
+  {
+    "id": "Q7a TRANSICIÓN cliente.sticr.app ve el ingreso y entra",
+    "ok": true,
+    "detalle": "{\"acao\":[\"https://qacbc579f0.sticr.app\"]}"
+  },
+  {
+    "id": "Q7b TRANSICIÓN demo.sticr.app entra sola",
+    "ok": true,
+    "detalle": "{\"acao\":[\"https://demo.sticr.app\"]}"
+  },
+  {
+    "id": "Q8 no existe 1280px light: sin desborde, axe limpio, Tab llega al enlace",
+    "ok": true,
+    "detalle": "{\"axe\":[],\"foco\":{\"tag\":\"A\",\"texto\":\"Ir a sticr.app\",\"outline\":\"solid\"}}"
+  },
+  {
+    "id": "Q8 no existe 1280px dark: sin desborde, axe limpio, Tab llega al enlace",
+    "ok": true,
+    "detalle": "{\"axe\":[],\"foco\":{\"tag\":\"A\",\"texto\":\"Ir a sticr.app\",\"outline\":\"solid\"}}"
+  },
+  {
+    "id": "Q8 no existe 390px light: sin desborde, axe limpio, Tab llega al enlace",
+    "ok": true,
+    "detalle": "{\"axe\":[],\"foco\":{\"tag\":\"A\",\"texto\":\"Ir a sticr.app\",\"outline\":\"solid\"}}"
+  },
+  {
+    "id": "Q8 no existe 390px dark: sin desborde, axe limpio, Tab llega al enlace",
+    "ok": true,
+    "detalle": "{\"axe\":[],\"foco\":{\"tag\":\"A\",\"texto\":\"Ir a sticr.app\",\"outline\":\"solid\"}}"
+  },
+  {
+    "id": "Q10 etiqueta de 63 caracteres en 390 px → no existe sin desborde",
+    "ok": true,
+    "detalle": "{\"desborde\":false,\"llamadas\":[\"GET /api/auth/direccion?valor=lc579f0xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"]}"
+  },
+  {
+    "id": "Q9 axe en la demo (1280 px)",
+    "ok": false,
+    "detalle": "[\"color-contrast(serious) x19 .sub | button[data-tab=\\\"colilla\\\"] | button[data-tab=\\\"boletas\\\"]\"]"
+  }
+]
