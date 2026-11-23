@@ -1,0 +1,215 @@
+{
+  "resultados": [
+    {
+      "id": "F1a cliente activo ve el ingreso",
+      "ok": true,
+      "detalle": "{\"form\":true,\"noindex\":false,\"direccionPorCarga\":1}"
+    },
+    {
+      "id": "F1b cliente activo entra y ve la app",
+      "ok": true,
+      "detalle": "appWrap visible tras el ingreso"
+    },
+    {
+      "id": "F1c recarga con sesión guardada entra directo a la app",
+      "ok": true,
+      "detalle": "llamadas en la recarga: [\"GET /api/auth/direccion?valor=qaea6df088\"]"
+    },
+    {
+      "id": "F1d cerrar sesión y volver a entrar",
+      "ok": true,
+      "detalle": "ok"
+    },
+    {
+      "id": "F1e sin errores de JavaScript",
+      "ok": true,
+      "detalle": "[]"
+    },
+    {
+      "id": "F1f consultas de /direccion por carga de página",
+      "ok": true,
+      "detalle": "10 consultas en 10 cargas (resto de llamadas por carga: [\"GET /api/empleados\",\"GET /api/admin/empresa\",\"GET /api/admin/usuarios\",\"GET /api/colillas\",\"GET /api/reportes\",\"GET /api/boletas\"])"
+    },
+    {
+      "id": "F2 empresa suspendida ve el ingreso y el aviso de suspensión",
+      "ok": true,
+      "detalle": "Esta cuenta está suspendida. Contacta a STI para reactivarla."
+    },
+    {
+      "id": "F3 planilla.sticr.app lleva a la ficha sin llamar a la API",
+      "ok": true,
+      "detalle": "{\"url\":\"https://sticr.app/proyectos/control-de-planilla\",\"llamadas\":[],\"errores\":[]}"
+    },
+    {
+      "id": "F4 la demo entra sola sin formulario ni /direccion",
+      "ok": true,
+      "detalle": "[\"POST /api/auth/login\",\"GET /api/empleados\",\"GET /api/admin/empresa\",\"GET /api/admin/usuarios\"]"
+    },
+    {
+      "id": "F5 con la API caída se ve el ingreso",
+      "ok": true,
+      "detalle": "{\"attr\":null,\"noindex\":false,\"formEnDom\":true,\"form\":true,\"app\":false,\"noExiste\":false,\"titulo\":\"Planilla — Control de Nómina\",\"href\":\"https://sticr.app\",\"texto\":\"Ir a sticr.app\",\"desborde\":false,\"error\":\"\"}"
+    },
+    {
+      "id": "F6 libre6df088.planilla.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":1}"
+    },
+    {
+      "id": "F6 crumble.planilla.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F6 crumble-admin.planilla.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F6 pasteleria-demo.planilla.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F6 pasteleria-demo-admin.planilla.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F6 www.planilla.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F6 admin.planilla.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F6 api.planilla.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F6 app.planilla.sticr.app → no existe",
+      "ok": true,
+      "detalle": "{\"href\":\"https://sticr.app\",\"noindex\":true,\"formEnDom\":false,\"consultas\":0}"
+    },
+    {
+      "id": "F7 cliente heredado ab.planilla.sticr.app ve el ingreso y entra",
+      "ok": true,
+      "detalle": "{\"form\":true,\"noExiste\":false,\"noindex\":false,\"entra\":true}"
+    },
+    {
+      "id": "F7 cliente heredado q8.planilla.sticr.app ve el ingreso y entra",
+      "ok": true,
+      "detalle": "{\"form\":true,\"noExiste\":false,\"noindex\":false,\"entra\":true}"
+    },
+    {
+      "id": "F7 cliente heredado qaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.planilla.sticr.app ve el ingreso y entra",
+      "ok": true,
+      "detalle": "{\"form\":true,\"noExiste\":false,\"noindex\":false,\"entra\":true}"
+    },
+    {
+      "id": "F7 cliente heredado ayuda.planilla.sticr.app ve el ingreso y entra",
+      "ok": true,
+      "detalle": "{\"form\":true,\"noExiste\":false,\"noindex\":false,\"entra\":true}"
+    },
+    {
+      "id": "F9 a.b.planilla.sticr.app → no existe sin consultar la API",
+      "ok": true,
+      "detalle": "{\"llamadas\":[],\"noindex\":true}"
+    },
+    {
+      "id": "F9 qaea6df088.up.railway.app → no existe sin consultar la API",
+      "ok": true,
+      "detalle": "{\"llamadas\":[],\"noindex\":true}"
+    },
+    {
+      "id": "F9 planilla.sticr.app.ejemplo.com → no existe sin consultar la API",
+      "ok": true,
+      "detalle": "{\"llamadas\":[],\"noindex\":true}"
+    },
+    {
+      "id": "F9 qaea6df088.planilla.sticr.app.ejemplo.com → no existe sin consultar la API",
+      "ok": true,
+      "detalle": "{\"llamadas\":[],\"noindex\":true}"
+    },
+    {
+      "id": "F10a TRANSICIÓN cliente en la forma vieja ve el ingreso y entra",
+      "ok": true,
+      "detalle": "{\"form\":true,\"entra\":true}"
+    },
+    {
+      "id": "F10b TRANSICIÓN demo.sticr.app entra sola",
+      "ok": true,
+      "detalle": "appWrap visible"
+    },
+    {
+      "id": "F10c TRANSICIÓN libre en la forma vieja → no existe",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "id": "F8 no-existe 1280px light: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 no-existe 390px light: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 teclado light: Tab llega a \"Ir a sticr.app\" con foco visible y Enter navega",
+      "ok": true,
+      "detalle": "{\"tag\":\"A\",\"texto\":\"Ir a sticr.app\",\"outline\":\"solid 2px\",\"alto\":66}"
+    },
+    {
+      "id": "F8 ingreso 1280px light: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 ingreso 390px light: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 teclado light: en el ingreso el primer campo alcanzable es el usuario",
+      "ok": true,
+      "detalle": "primer foco: loginUsuario"
+    },
+    {
+      "id": "F8 no-existe 1280px dark: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 no-existe 390px dark: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 teclado dark: Tab llega a \"Ir a sticr.app\" con foco visible y Enter navega",
+      "ok": true,
+      "detalle": "{\"tag\":\"A\",\"texto\":\"Ir a sticr.app\",\"outline\":\"solid 2px\",\"alto\":66}"
+    },
+    {
+      "id": "F8 ingreso 1280px dark: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 ingreso 390px dark: sin desborde ni fallas de axe",
+      "ok": true,
+      "detalle": "desborde=false axe=[]"
+    },
+    {
+      "id": "F8 teclado dark: en el ingreso el primer campo alcanzable es el usuario",
+      "ok": true,
+      "detalle": "primer foco: loginUsuario"
+    }
+  ],
+  "totalDireccion": 29
+}

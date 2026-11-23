@@ -1,0 +1,152 @@
+[
+  {
+    "id": "C1a 1280px el campo muestra el sufijo .planilla.sticr.app",
+    "ok": true,
+    "detalle": ".planilla.sticr.app"
+  },
+  {
+    "id": "C1b 1280px \"Abrir la demo\" apunta a https://demo.planilla.sticr.app",
+    "ok": true,
+    "detalle": "https://demo.planilla.sticr.app"
+  },
+  {
+    "id": "C1c 1280px muestra \"✓ minegocio.planilla.sticr.app está disponible.\" (backend real)",
+    "ok": true,
+    "detalle": "✓ minegocio.planilla.sticr.app está disponible."
+  },
+  {
+    "id": "C1d 1280px el botón de pago se habilita con un nombre disponible",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "id": "C1e 1280px \"crumble\" sale como reservado y no deja pagar",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "id": "C1f 1280px medidas del campo del nombre (informativo)",
+    "ok": true,
+    "detalle": "{\"campo\":144,\"sufijo\":186,\"fila\":330,\"cabe\":false,\"caracteresVisibles\":13,\"sufijoDesborda\":false,\"mensajeCompleto\":true}"
+  },
+  {
+    "id": "C1g 1280px sin desborde horizontal de la página y el sufijo dentro de la fila",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "id": "C1h 1280px teclado: Tab del nombre de la empresa al campo de la dirección",
+    "ok": true,
+    "detalle": "subdominio"
+  },
+  {
+    "id": "C1i 1280px axe en la ficha",
+    "ok": true,
+    "detalle": "[]"
+  },
+  {
+    "id": "C1j 1280px sin errores de JavaScript",
+    "ok": true,
+    "detalle": "[]"
+  },
+  {
+    "id": "C2 /terminos 1280px ejemplo nuevo, sin el viejo, fecha 23 nov 2026, sin desborde, axe limpio",
+    "ok": false,
+    "detalle": "{\"nuevo\":true,\"viejo\":false,\"fecha\":true,\"axe\":[\"color-contrast(serious) x15 .mt-3.text-slate | #seccion-1 > .mr-3.font-mono.tracking-\\\\[0\\\\.057em\\\\]\"]}"
+  },
+  {
+    "id": "C2 /reembolsos 1280px ejemplo nuevo, sin el viejo, fecha 23 nov 2026, sin desborde, axe limpio",
+    "ok": false,
+    "detalle": "{\"nuevo\":true,\"viejo\":false,\"fecha\":true,\"axe\":[\"color-contrast(serious) x6 .mt-3:nth-child(5) | #seccion-1 > .mr-3.font-mono.tracking-\\\\[0\\\\.057em\\\\]\"]}"
+  },
+  {
+    "id": "C2 /privacidad 1280px ejemplo nuevo, sin el viejo, fecha 23 nov 2026, sin desborde, axe limpio",
+    "ok": false,
+    "detalle": "{\"nuevo\":true,\"viejo\":false,\"fecha\":true,\"axe\":[\"color-contrast(serious) x12 .mt-3.text-slate | #seccion-1 > .mr-3.font-mono.tracking-\\\\[0\\\\.057em\\\\]\"]}"
+  },
+  {
+    "id": "C3a 1280px /configurar con enlace válido muestra minegocioqa.planilla.sticr.app",
+    "ok": true,
+    "detalle": "minegocioqa.planilla.sticr.app minegocioqa."
+  },
+  {
+    "id": "C3b 1280px /configurar listo enlaza a https://minegocioqa.planilla.sticr.app",
+    "ok": true,
+    "detalle": "[\"https://minegocioqa.planilla.sticr.app/\"]"
+  },
+  {
+    "id": "C1a 390px el campo muestra el sufijo .planilla.sticr.app",
+    "ok": true,
+    "detalle": ".planilla.sticr.app"
+  },
+  {
+    "id": "C1b 390px \"Abrir la demo\" apunta a https://demo.planilla.sticr.app",
+    "ok": true,
+    "detalle": "https://demo.planilla.sticr.app"
+  },
+  {
+    "id": "C1c 390px muestra \"✓ minegocio.planilla.sticr.app está disponible.\" (backend real)",
+    "ok": true,
+    "detalle": "✓ minegocio.planilla.sticr.app está disponible."
+  },
+  {
+    "id": "C1d 390px el botón de pago se habilita con un nombre disponible",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "id": "C1e 390px \"crumble\" sale como reservado y no deja pagar",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "id": "C1f 390px medidas del campo del nombre (informativo)",
+    "ok": true,
+    "detalle": "{\"campo\":114,\"sufijo\":186,\"fila\":300,\"cabe\":false,\"caracteresVisibles\":10,\"sufijoDesborda\":false,\"mensajeCompleto\":true}"
+  },
+  {
+    "id": "C1g 390px sin desborde horizontal de la página y el sufijo dentro de la fila",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "id": "C1h 390px teclado: Tab del nombre de la empresa al campo de la dirección",
+    "ok": true,
+    "detalle": "subdominio"
+  },
+  {
+    "id": "C1i 390px axe en la ficha",
+    "ok": true,
+    "detalle": "[]"
+  },
+  {
+    "id": "C1j 390px sin errores de JavaScript",
+    "ok": true,
+    "detalle": "[]"
+  },
+  {
+    "id": "C2 /terminos 390px ejemplo nuevo, sin el viejo, fecha 23 nov 2026, sin desborde, axe limpio",
+    "ok": false,
+    "detalle": "{\"nuevo\":true,\"viejo\":false,\"fecha\":true,\"axe\":[\"color-contrast(serious) x15 .mt-3.text-slate | #seccion-1 > .mr-3.font-mono.tracking-\\\\[0\\\\.057em\\\\]\"]}"
+  },
+  {
+    "id": "C2 /reembolsos 390px ejemplo nuevo, sin el viejo, fecha 23 nov 2026, sin desborde, axe limpio",
+    "ok": false,
+    "detalle": "{\"nuevo\":true,\"viejo\":false,\"fecha\":true,\"axe\":[\"color-contrast(serious) x6 .mt-3:nth-child(5) | #seccion-1 > .mr-3.font-mono.tracking-\\\\[0\\\\.057em\\\\]\"]}"
+  },
+  {
+    "id": "C2 /privacidad 390px ejemplo nuevo, sin el viejo, fecha 23 nov 2026, sin desborde, axe limpio",
+    "ok": false,
+    "detalle": "{\"nuevo\":true,\"viejo\":false,\"fecha\":true,\"axe\":[\"color-contrast(serious) x12 .mt-3.text-slate | #seccion-1 > .mr-3.font-mono.tracking-\\\\[0\\\\.057em\\\\]\"]}"
+  },
+  {
+    "id": "C3a 390px /configurar con enlace válido muestra minegocioqa.planilla.sticr.app",
+    "ok": true,
+    "detalle": "minegocioqa.planilla.sticr.app minegocioqa."
+  },
+  {
+    "id": "C3b 390px /configurar listo enlaza a https://minegocioqa.planilla.sticr.app",
+    "ok": true,
+    "detalle": "[\"https://minegocioqa.planilla.sticr.app/\"]"
+  }
+]

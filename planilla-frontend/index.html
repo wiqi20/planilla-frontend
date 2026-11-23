@@ -3,26 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <script>
-  // Se decide ANTES del primer pintado, para que el formulario de ingreso nunca se vea cuando no corresponde:
-  //  - demo.sticr.app (mismo criterio que ES_DEMO: host exactamente "demo"): la demo entra sola.
-  //  - Subdominios que nunca son un cliente de Planilla (otros sistemas de STI y nombres reservados; misma lista
-  //    que NUNCA_CLIENTE más abajo y que src/subdominios.js del backend): "Esta dirección no existe", sin consultar nada.
-  //  - Cualquier otro nombre.sticr.app (salvo las direcciones propias de Planilla): se muestra "Cargando…" mientras
-  //    la API confirma que la empresa existe. Mientras tanto la página no se indexa (noindex); si existe, se quita.
+  // Se decide ANTES del primer pintado, para que el formulario de ingreso nunca se vea cuando no corresponde.
+  // Aquí se clasifica la dirección UNA sola vez (docs/estandares/dominios.md de STICR_landingpage); la configuración
+  // de más abajo lee el resultado de window.PLANILLA_DIRECCION, para que las dos partes no se separen.
+  //  - planilla.sticr.app (raíz): no es ninguna empresa; lleva a la ficha del sistema en sticr.app.
+  //  - nombre.planilla.sticr.app (un solo nivel): la empresa es "nombre".
+  //      · demo (mismo criterio que ES_DEMO: nombre exactamente "demo"): la demo entra sola.
+  //      · Nombres que nunca son un cliente de Planilla (misma lista que NUNCA_CLIENTE más abajo y que
+  //        src/subdominios.js del backend): "Esta dirección no existe", sin consultar nada.
+  //      · Cualquier otro: "Cargando…" mientras la API confirma que la empresa existe. Mientras tanto la página
+  //        no se indexa (noindex); si existe, se quita.
+  //  - (TRANSICIÓN) nombre.sticr.app, la forma vieja: igual que nombre.planilla.sticr.app.
+  //  - localhost y 127.0.0.1: modo de desarrollo (empresa 'admin'), solo para trabajar en local.
+  //  - Cualquier otro host (otro dominio, *.up.railway.app, dos niveles como a.b.planilla.sticr.app):
+  //    "Esta dirección no existe", sin consultar nada.
   (function () {
-    var m = location.hostname.toLowerCase().match(/^([a-z0-9-]+)\.sticr\.app$/);
-    if (!m) return;
-    var nombre = m[1];
+    var COMODIN = /^([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\.planilla\.sticr\.app$/;
+    // TRANSICIÓN: QUITAR EN EL PASO 8 de docs/proyectos/planilla/mover-comodin.md (STICR_landingpage),
+    // cuando *.sticr.app ya no apunte a este servicio. Es la expresión de antes, sin cambios.
+    var COMODIN_VIEJO = /^([a-z0-9-]+)\.sticr\.app$/;
+    var RAIZ = 'planilla.sticr.app';
+    var FICHA = 'https://sticr.app/proyectos/control-de-planilla';
     var nuncaCliente = ['crumble', 'crumble-admin', 'pasteleria-demo', 'pasteleria-demo-admin', 'www', 'admin', 'api', 'app'];
-    var propias = ['planilla', 'planilla-api'];
-    if (nombre === 'demo') { document.documentElement.setAttribute('data-demo', 'abriendo'); return; }
-    if (propias.indexOf(nombre) !== -1) return;
-    document.documentElement.setAttribute('data-direccion', nuncaCliente.indexOf(nombre) !== -1 ? 'no-existe' : 'comprobando');
+
+    var host = location.hostname.toLowerCase();
+    var m;
+    var direccion;
+    if (host === RAIZ) direccion = { tipo: 'raiz' };
+    else if ((m = host.match(COMODIN))) direccion = { tipo: 'empresa', nombre: m[1] };
+    else if ((m = host.match(COMODIN_VIEJO))) direccion = { tipo: 'empresa', nombre: m[1] }; // TRANSICIÓN: quitar en el paso 8
+    else if (host === 'localhost' || host === '127.0.0.1') direccion = { tipo: 'local' };
+    else direccion = { tipo: 'desconocida' };
+    Object.defineProperty(window, 'PLANILLA_DIRECCION', { value: Object.freeze(direccion), writable: false, configurable: false });
+
+    if (direccion.tipo === 'local') return;
+    if (direccion.tipo === 'empresa' && direccion.nombre === 'demo') { document.documentElement.setAttribute('data-demo', 'abriendo'); return; }
+    var estado;
+    if (direccion.tipo === 'raiz') estado = 'redirigiendo';
+    else if (direccion.tipo === 'desconocida' || nuncaCliente.indexOf(direccion.nombre) !== -1) estado = 'no-existe';
+    else estado = 'comprobando';
+    document.documentElement.setAttribute('data-direccion', estado);
     var robots = document.createElement('meta');
     robots.name = 'robots';
     robots.content = 'noindex';
     robots.id = 'robotsNoindex';
     document.head.appendChild(robots);
+    if (estado === 'redirigiendo') location.replace(FICHA);
   })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -346,10 +372,12 @@
   html:not([data-theme="dark"]) #loginGate .field label { color: var(--ink); }
 
   /* Dirección sin cliente de Planilla (el atributo lo pone el script del <head>):
-     comprobando -> estado neutro mientras la API responde; no-existe -> página "Esta dirección no existe". */
+     comprobando -> estado neutro mientras la API responde; redirigiendo -> el mismo estado neutro mientras
+     planilla.sticr.app lleva a la ficha; no-existe -> página "Esta dirección no existe". */
   #direccionComprobando, #direccionNoExiste { display: none; }
   html[data-direccion] #loginGate, html[data-direccion] #appWrap { display: none !important; }
-  html[data-direccion="comprobando"] #direccionComprobando { display: flex; }
+  html[data-direccion="comprobando"] #direccionComprobando,
+  html[data-direccion="redirigiendo"] #direccionComprobando { display: flex; }
   html[data-direccion="no-existe"] #direccionNoExiste { display: flex; }
   #direccionNoExiste {
     min-height: 100vh; align-items: center; justify-content: center; padding: 20px;
@@ -835,22 +863,24 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
   // ============ Estado y configuración ============
-  // Dos modos, según la dirección con la que se abre el sistema:
-  //  - Servicio compartido: cualquier "nombre.sticr.app" (por ejemplo minegocio.sticr.app o demo.sticr.app).
-  //    El nombre de la dirección ES la empresa, y todos usan la misma API.
-  //  - Direcciones propias de Planilla (planilla, planilla-api): ya no tienen una instalación propia.
-  //    Si se abren, usan la API compartida con la empresa fija 'admin'; el inicio de sesión falla si esa empresa no existe.
-  //  - www, api, app, admin y los subdominios de otros sistemas (NUNCA_CLIENTE): "Esta dirección no existe".
-  //  - nombre.sticr.app que no es una empresa (según GET /api/auth/direccion): "Esta dirección no existe".
+  // La dirección ya la clasificó el script del <head> (window.PLANILLA_DIRECCION):
+  //  - empresa: "nombre.planilla.sticr.app" (por ejemplo minegocio.planilla.sticr.app o demo.planilla.sticr.app;
+  //    en transición también nombre.sticr.app). El nombre de la dirección ES la empresa, y todos usan la misma API.
+  //  - raiz: planilla.sticr.app. El <head> ya la mandó a la ficha; aquí no se hace nada más.
+  //  - local: localhost y 127.0.0.1, modo de desarrollo con la empresa 'admin'.
+  //  - desconocida: cualquier otro host. "Esta dirección no existe", sin consultar la API.
+  //  - www, api, app, admin y los nombres de otros sistemas (NUNCA_CLIENTE): "Esta dirección no existe".
+  //  - nombre.planilla.sticr.app que no es una empresa (según GET /api/auth/direccion): "Esta dirección no existe".
   const API_COMPARTIDA = 'https://planilla-api.sticr.app';
-  const DIRECCIONES_INDIVIDUALES = ['planilla', 'planilla-api']; // propias de Planilla (mismo criterio que el script del <head>)
-  // Subdominios que nunca son un cliente de Planilla (otros sistemas de STI y nombres reservados): muestran
-  // "Esta dirección no existe". Misma lista que el script del <head>; el backend (src/subdominios.js) es quien manda.
+  // Nombres que nunca son un cliente de Planilla: no se venden para no confundir (por ejemplo crumble.planilla.sticr.app
+  // parecería de otro sistema). Muestran "Esta dirección no existe". Misma lista que el script del <head>; el backend
+  // (src/subdominios.js) es quien manda.
   const NUNCA_CLIENTE = ['crumble', 'crumble-admin', 'pasteleria-demo', 'pasteleria-demo-admin', 'www', 'admin', 'api', 'app'];
-  const coincidenciaDireccion = location.hostname.toLowerCase().match(/^([a-z0-9-]+)\.sticr\.app$/);
-  const MODO_COMPARTIDO = !!coincidenciaDireccion && !DIRECCIONES_INDIVIDUALES.includes(coincidenciaDireccion[1]);
+  const DIRECCION = window.PLANILLA_DIRECCION || { tipo: 'desconocida' };
+  const MODO_COMPARTIDO = DIRECCION.tipo === 'empresa';
   const API_BASE_URL = API_COMPARTIDA; // siempre la API compartida (ya no hay instalaciones individuales), sin campo manual
-  const EMPRESA_SUBDOMINIO = MODO_COMPARTIDO ? coincidenciaDireccion[1] : 'admin'; // en direcciones reservadas no se pide subdominio en el login
+  // Solo en local se entra con la empresa fija 'admin'; en la raíz y en hosts desconocidos nunca hay ingreso.
+  const EMPRESA_SUBDOMINIO = MODO_COMPARTIDO ? DIRECCION.nombre : (DIRECCION.tipo === 'local' ? 'admin' : '');
   const ES_DEMO = MODO_COMPARTIDO && EMPRESA_SUBDOMINIO === 'demo';
   const DEMO_USUARIO = 'demo';
   const DEMO_PASSWORD = 'demo1234'; // pública a propósito: la demo es de acceso libre
@@ -1159,7 +1189,9 @@
   // true si hay que seguir con el ingreso normal. Si no se pudo confirmar (API caída, límite de consultas), se sigue
   // con el ingreso de siempre: un cliente real nunca debe quedarse sin poder entrar por un fallo de esta comprobación.
   async function comprobarDireccion() {
-    if (!MODO_COMPARTIDO || ES_DEMO) return true;
+    if (DIRECCION.tipo === 'raiz') return false; // el <head> ya está llevando a la ficha
+    if (DIRECCION.tipo === 'desconocida') { mostrarDireccionNoExiste(); return false; }
+    if (!MODO_COMPARTIDO || ES_DEMO) return true; // local o demo
     if (NUNCA_CLIENTE.includes(EMPRESA_SUBDOMINIO)) { mostrarDireccionNoExiste(); return false; }
     const existe = await consultarDireccion(EMPRESA_SUBDOMINIO);
     if (existe === false) { mostrarDireccionNoExiste(); return false; }

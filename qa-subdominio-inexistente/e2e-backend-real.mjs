@@ -1,10 +1,11 @@
 // QA independiente del cambio "subdominio inexistente": navegador real (Chromium) + backend REAL en local.
-// El HTML se sirve como <nombre>.sticr.app y las llamadas a planilla-api.sticr.app se reenvían al backend local
-// (no se toca la API de producción). Todo lo demás de Internet se bloquea.
+// Actualizada para el comodín por sistema (mover-comodin.md de STICR_landingpage): el HTML se sirve como
+// <nombre>.planilla.sticr.app y las llamadas a planilla-api.sticr.app se reenvían al backend local
+// (no se toca la API de producción). Todo lo demás de Internet se bloquea, salvo la ficha de sticr.app, que se simula.
 // Uso:
 //   PLAYWRIGHT_DIR=/opt/npm-tools/node_modules AXE=/ruta/axe-core/axe.min.js API_LOCAL=http://localhost:4777 \
 //   PG_URL=postgresql://postgres@localhost:57311/qa_test PROVISION_SECRET=... \
-//   node qa-subdominio-inexistente/e2e-backend-real.mjs planilla-frontend/index.html docs/subdominio-inexistente/qa-capturas
+//   node qa-subdominio-inexistente/e2e-backend-real.mjs planilla-frontend/index.html docs/comodin-planilla/qa-capturas
 // El backend debe correr con DEMO_ENABLED=true y la misma PROVISION_SECRET. La prueba crea sus empresas (prefijo qae)
 // y las borra al final.
 import { createRequire } from 'node:module';
@@ -22,6 +23,7 @@ const HTML = fs.readFileSync(process.argv[2], 'utf8');
 const CAP = process.argv[3];
 fs.mkdirSync(CAP, { recursive: true });
 const API = process.env.API_LOCAL;
+const FICHA = 'https://sticr.app/proyectos/control-de-planilla';
 const AXE = fs.readFileSync(process.env.AXE, 'utf8');
 const SECRETO = process.env.PROVISION_SECRET;
 const pool = new Pool({ connectionString: process.env.PG_URL });
@@ -47,7 +49,8 @@ async function sembrar() {
     await provision('/admin', { subdominio: sub, stripeSubscriptionId: `sub_${sub}`, usuario: 'dueno', password: CLAVE });
   }
   await provision('/estado', { stripeSubscriptionId: `sub_${SUSP}`, activa: false });
-  // Empresa 'admin' (la de planilla.sticr.app, la crea db/seed-admin.js) y dos "heredadas" (nombres que el registro
+  // Empresa 'admin' (la crea db/seed-admin.js; antes entraba por planilla.sticr.app, ahora nunca: la raíz lleva a la
+  // ficha y admin.planilla.sticr.app es NUNCA_CLIENTE) y dos "heredadas" (nombres que el registro
   // público aceptaba antes o que seed-admin acepta sin validar).
   const hash = await bcrypt.hash(CLAVE, 10);
   for (const sub of ['admin', ...HEREDADAS]) {
@@ -63,7 +66,7 @@ async function limpiar() {
 
 // ---------- Navegador ----------
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--no-sandbox'] });
-async function abrir(host, { ancho = 1280, alto = 800, tema = 'light', apiCaida = false, storage } = {}) {
+async function abrir(host, { ancho = 1280, alto = 800, tema = 'light', apiCaida = false, storage, esperar = 'domcontentloaded' } = {}) {
   const ctx = await browser.newContext({ viewport: { width: ancho, height: alto }, colorScheme: tema, storageState: storage });
   const page = await ctx.newPage();
   const llamadas = [];
@@ -73,6 +76,7 @@ async function abrir(host, { ancho = 1280, alto = 800, tema = 'light', apiCaida 
     const r = route.request();
     const url = new URL(r.url());
     if (url.hostname === host && url.pathname === '/') return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: HTML });
+    if (url.href === FICHA) return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: '<!doctype html><title>Ficha</title><h1>Control de Planilla</h1>' });
     if (url.hostname === 'planilla-api.sticr.app') {
       llamadas.push(`${r.method()} ${url.pathname}${url.search}`);
       if (url.pathname === '/api/auth/direccion' && r.method() === 'GET') totalDireccion++;
@@ -84,7 +88,7 @@ async function abrir(host, { ancho = 1280, alto = 800, tema = 'light', apiCaida 
     }
     return route.abort('blockedbyclient').catch(() => {}); // fuentes/CDN: fuera; el texto usa la fuente de respaldo
   });
-  await page.goto(`https://${host}/`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`https://${host}/`, { waitUntil: esperar });
   return { ctx, page, llamadas, errores };
 }
 const listo = (page) => page.waitForFunction(() => {
@@ -124,7 +128,7 @@ try {
 
   // F1. Cliente activo: ve el ingreso, entra, usa la app, cierra sesión y vuelve a entrar.
   {
-    const { ctx, page, llamadas, errores } = await abrir(`${ACTIVA}.sticr.app`);
+    const { ctx, page, llamadas, errores } = await abrir(`${ACTIVA}.planilla.sticr.app`);
     await listo(page);
     const e = await estado(page);
     const dirs = llamadas.filter((l) => l.startsWith('GET /api/auth/direccion')).length;
@@ -151,7 +155,7 @@ try {
     marcar('F1e sin errores de JavaScript', errores.length === 0, JSON.stringify(errores));
     await ctx.close();
     // 10 cargas seguidas = 10 consultas (para estimar el consumo del límite de 120/15 min por IP).
-    const c2 = await abrir(`${ACTIVA}.sticr.app`, { storage });
+    const c2 = await abrir(`${ACTIVA}.planilla.sticr.app`, { storage });
     await listo(c2.page);
     for (let i = 0; i < 9; i++) { await c2.page.reload({ waitUntil: 'domcontentloaded' }); await listo(c2.page); }
     const n = c2.llamadas.filter((l) => l.startsWith('GET /api/auth/direccion')).length;
@@ -161,7 +165,7 @@ try {
 
   // F2. Cliente suspendido: ve el ingreso y, al entrar, el aviso de suspensión.
   {
-    const { ctx, page } = await abrir(`${SUSP}.sticr.app`);
+    const { ctx, page } = await abrir(`${SUSP}.planilla.sticr.app`);
     await listo(page);
     const e = await estado(page);
     await entrar(page, 'dueno', CLAVE);
@@ -172,20 +176,17 @@ try {
     await ctx.close();
   }
 
-  // F3. planilla.sticr.app: ingreso de la empresa admin, sin consultar /direccion.
+  // F3. planilla.sticr.app (raíz): lleva a la ficha de sticr.app, sin llamar a la API ni entrar a 'admin'.
   {
-    const { ctx, page, llamadas } = await abrir('planilla.sticr.app');
-    await listo(page);
-    const e = await estado(page);
-    await entrar(page, 'dueno', CLAVE);
-    await page.waitForFunction(() => document.getElementById('appWrap').offsetParent !== null, null, { timeout: 15000 });
-    marcar('F3 planilla.sticr.app entra con la empresa admin', e.form && !e.noindex && !llamadas.some((l) => l.includes('direccion')), JSON.stringify(llamadas));
+    const { ctx, page, llamadas, errores } = await abrir('planilla.sticr.app', { esperar: 'commit' });
+    const llega = await page.waitForURL(FICHA, { timeout: 10000 }).then(() => true, () => false);
+    marcar('F3 planilla.sticr.app lleva a la ficha sin llamar a la API', llega && llamadas.length === 0 && errores.length === 0, JSON.stringify({ url: page.url(), llamadas, errores }));
     await ctx.close();
   }
 
   // F4. Demo sin login (backend con DEMO_ENABLED=true).
   {
-    const { ctx, page, llamadas, errores } = await abrir('demo.sticr.app', { ancho: 390, alto: 844 });
+    const { ctx, page, llamadas, errores } = await abrir('demo.planilla.sticr.app', { ancho: 390, alto: 844 });
     await page.waitForFunction(() => document.getElementById('appWrap').offsetParent !== null, null, { timeout: 20000 });
     const e = await estado(page);
     marcar('F4 la demo entra sola sin formulario ni /direccion', e.app && !e.form && !e.noindex && !llamadas.some((l) => l.includes('direccion')) && errores.length === 0, JSON.stringify(llamadas));
@@ -195,7 +196,7 @@ try {
 
   // F5. API caída: se ve el ingreso (fallo abierto).
   {
-    const { ctx, page } = await abrir(`${ACTIVA}.sticr.app`, { apiCaida: true });
+    const { ctx, page } = await abrir(`${ACTIVA}.planilla.sticr.app`, { apiCaida: true });
     await listo(page);
     const e = await estado(page);
     marcar('F5 con la API caída se ve el ingreso', e.form && !e.noExiste && !e.noindex, JSON.stringify(e));
@@ -204,31 +205,61 @@ try {
 
   // F6. Libre y reservados: "Esta dirección no existe", enlace a sticr.app, noindex, sin formulario en el DOM.
   for (const nombre of [`libre${id}`, 'crumble', 'crumble-admin', 'pasteleria-demo', 'pasteleria-demo-admin', 'www', 'admin', 'api', 'app']) {
-    const { ctx, page, llamadas, errores } = await abrir(`${nombre}.sticr.app`);
+    const { ctx, page, llamadas, errores } = await abrir(`${nombre}.planilla.sticr.app`);
     await listo(page);
     const e = await estado(page);
     const ok = e.noExiste && e.noindex && !e.formEnDom && !e.app && e.href === 'https://sticr.app' && /no existe/.test(e.titulo) && errores.length === 0;
-    marcar(`F6 ${nombre}.sticr.app → no existe`, ok, JSON.stringify({ href: e.href, noindex: e.noindex, formEnDom: e.formEnDom, consultas: llamadas.length }));
+    marcar(`F6 ${nombre}.planilla.sticr.app → no existe`, ok, JSON.stringify({ href: e.href, noindex: e.noindex, formEnDom: e.formEnDom, consultas: llamadas.length }));
     await ctx.close();
   }
 
   // F7. Clientes heredados (nombres fuera de 3-30 o reservados que no son de otro sistema).
   for (const nombre of HEREDADAS) {
-    const { ctx, page } = await abrir(`${nombre}.sticr.app`);
+    const { ctx, page } = await abrir(`${nombre}.planilla.sticr.app`);
     await listo(page);
     const e = await estado(page);
     await entrar(page, 'dueno', CLAVE);
     const entra = await page.waitForFunction(() => document.getElementById('appWrap').offsetParent !== null, null, { timeout: 15000 }).then(() => true, () => false);
-    marcar(`F7 cliente heredado ${nombre}.sticr.app ve el ingreso y entra`, e.form && !e.noExiste && !e.noindex && entra, JSON.stringify({ form: e.form, noExiste: e.noExiste, noindex: e.noindex, entra }));
+    marcar(`F7 cliente heredado ${nombre}.planilla.sticr.app ve el ingreso y entra`, e.form && !e.noExiste && !e.noindex && entra, JSON.stringify({ form: e.form, noExiste: e.noExiste, noindex: e.noindex, entra }));
     await page.screenshot({ path: `${CAP}/heredado-${nombre.length > 10 ? 'largo40' : nombre}-1280.png` });
     await ctx.close();
+  }
+
+  // F9. Hosts que no son de Planilla: "no existe" sin consultar la API, aunque la empresa 'admin' exista.
+  for (const host of ['a.b.planilla.sticr.app', `${ACTIVA}.up.railway.app`, 'planilla.sticr.app.ejemplo.com', `${ACTIVA}.planilla.sticr.app.ejemplo.com`]) {
+    const { ctx, page, llamadas, errores } = await abrir(host);
+    await listo(page);
+    const e = await estado(page);
+    marcar(`F9 ${host} → no existe sin consultar la API`, e.noExiste && e.noindex && !e.formEnDom && llamadas.length === 0 && errores.length === 0, JSON.stringify({ llamadas, noindex: e.noindex }));
+    await ctx.close();
+  }
+
+  // F10. TRANSICIÓN (quitar en el paso 8): la forma vieja <nombre>.sticr.app sigue funcionando igual que antes,
+  // con el backend que acepta las dos formas en CORS. En el paso 8 pasa a "no existe" sin consultar la API.
+  {
+    const { ctx, page, errores } = await abrir(`${ACTIVA}.sticr.app`);
+    await listo(page);
+    const e = await estado(page);
+    await entrar(page, 'dueno', CLAVE);
+    const entra = await page.waitForFunction(() => document.getElementById('appWrap').offsetParent !== null, null, { timeout: 15000 }).then(() => true, () => false);
+    marcar('F10a TRANSICIÓN cliente en la forma vieja ve el ingreso y entra', e.form && !e.noindex && entra && errores.length === 0, JSON.stringify({ form: e.form, entra }));
+    await ctx.close();
+    const d = await abrir('demo.sticr.app');
+    const demo = await d.page.waitForFunction(() => document.getElementById('appWrap').offsetParent !== null, null, { timeout: 20000 }).then(() => true, () => false);
+    marcar('F10b TRANSICIÓN demo.sticr.app entra sola', demo, 'appWrap visible');
+    await d.ctx.close();
+    const l = await abrir(`libre${id}.sticr.app`);
+    await listo(l.page);
+    const el = await estado(l.page);
+    marcar('F10c TRANSICIÓN libre en la forma vieja → no existe', el.noExiste && !el.formEnDom, '');
+    await l.ctx.close();
   }
 
   // F8. Celular 390 px, tema claro y oscuro, axe y teclado en "no existe" y en el ingreso.
   for (const tema of ['light', 'dark']) {
     for (const [nombre, tipo] of [[`libre${id}`, 'no-existe'], [ACTIVA, 'ingreso']]) {
       for (const ancho of [1280, 390]) {
-        const { ctx, page } = await abrir(`${nombre}.sticr.app`, { ancho, alto: ancho === 390 ? 844 : 800, tema });
+        const { ctx, page } = await abrir(`${nombre}.planilla.sticr.app`, { ancho, alto: ancho === 390 ? 844 : 800, tema });
         await listo(page);
         const e = await estado(page);
         const v = await axe(page);

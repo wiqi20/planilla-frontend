@@ -1,0 +1,17 @@
+Prueba "las peticiones en vuelo durante SIGTERM se completan antes de salir" (test/cierre-arranque.test.js)
+Postgres 16 desechable, localhost:56813. main = origin/main (de11396); rama = origin/feat/comodin-planilla (d1d3d9f).
+Comando: TEST_DATABASE_URL=postgres://postgres@localhost:56813/<base> node --test test/cierre-arranque.test.js
+
+1) Sin carga, 5 corridas seguidas cada una:     main 0/5 fallas   rama 0/5 fallas
+2) Sin carga, 10 corridas intercaladas (en paralelo con otras pruebas de navegador):
+                                                main 0/10 fallas  rama 0/10 fallas
+3) Con la CPU ocupada (2 bucles, nproc=2), 5 intercaladas main→rama:
+                                                main 2/5 fallas   rama 5/5 fallas  (todas ECONNRESET)
+4) Con la CPU ocupada, 5 intercaladas rama→main:
+                                                main 0/5 fallas   rama 2/5 fallas  (ECONNRESET)
+
+Total con carga: main 2/10, rama 7/10. Total sin carga: main 0/15, rama 0/15.
+La rama no cambia src/server.js, src/cierre.js, src/app.js, test/cierre-arranque.test.js ni test/soporte/
+(git diff --stat origin/main vacío para esos archivos), ni package-lock.json. La login de la prueba no lleva
+cabecera Origin, así que el CORS nuevo no interviene. Conclusión: la prueba es inestable por tiempos y la falla
+también ocurre en main; la diferencia de frecuencia con carga no tiene una causa en el código de la rama.
